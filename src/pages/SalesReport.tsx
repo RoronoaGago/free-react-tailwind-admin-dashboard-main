@@ -1,19 +1,23 @@
-import { DownloadOutlined } from '@ant-design/icons';
+import { DownloadOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import SalesMetrics from "@/components/sales-report/SalesMetrics";
 import SalesStatistics from "@/components/sales-report/SalesStatistics";
-import { Dayjs } from 'dayjs';
+import { Dayjs } from "dayjs";
 import Button from "../components/ui/button/Button";
-import { DatePicker, theme } from 'antd';
-import { fetchSalesReport, ReportRequestParams, SalesReportData } from "@/api/reportService";
-import PageBreadcrumb from '@/components/common/PageBreadCrumb';
-import { toast } from 'react-toastify';
-import { Bounce } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import dayjs from 'dayjs';
-import { ConfigProvider} from 'antd';
-import type { ThemeConfig } from 'antd';
-import { useTheme } from '@/context/ThemeContext';
+import { DatePicker, theme } from "antd";
+import {
+  fetchSalesReport,
+  ReportRequestParams,
+  SalesReportData,
+} from "@/api/reportService";
+import PageBreadcrumb from "@/components/common/PageBreadCrumb";
+import { toast } from "react-toastify";
+import { Bounce } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import dayjs from "dayjs";
+import { ConfigProvider } from "antd";
+import type { ThemeConfig } from "antd";
+import { useTheme } from "@/context/ThemeContext";
 
 const { RangePicker } = DatePicker;
 
@@ -21,18 +25,18 @@ const { RangePicker } = DatePicker;
 const lightTheme: ThemeConfig = {
   components: {
     DatePicker: {
-      fontFamily: 'Outfit, sans-serif',
-      colorPrimary: '#3641f5',
-      colorBorder: '#e5e7eb',
-      colorText: '#374151',
-      colorTextPlaceholder: '#9ca3af',
-      colorBgContainer: '#ffffff',
-      colorBgElevated: '#ffffff',
-      colorTextHeading: '#111827',
-      colorTextDescription: '#6b7280',
-      colorIcon: '#9ca3af',
-      colorLink: '#3b82f6',
-      colorLinkHover: '#2563eb',
+      fontFamily: "Outfit, sans-serif",
+      colorPrimary: "#3641f5",
+      colorBorder: "#e5e7eb",
+      colorText: "#374151",
+      colorTextPlaceholder: "#9ca3af",
+      colorBgContainer: "#ffffff",
+      colorBgElevated: "#ffffff",
+      colorTextHeading: "#111827",
+      colorTextDescription: "#6b7280",
+      colorIcon: "#9ca3af",
+      colorLink: "#3b82f6",
+      colorLinkHover: "#2563eb",
       borderRadius: 6,
       fontSize: 14,
       paddingSM: 8,
@@ -47,19 +51,19 @@ const darkTheme: ThemeConfig = {
   algorithm: theme.darkAlgorithm, // This applies the dark mode algorithm
   components: {
     DatePicker: {
-      fontFamily: 'Outfit, sans-serif',
-    
-      colorPrimary: '#5a67f7', // Brighter primary for better visibility in dark
-      colorBorder: '#4b5563', // gray-600
-      colorText: '#e5e7eb', // gray-200
-      colorTextPlaceholder: '#9ca3af', // gray-400
-      colorBgContainer: '#1f2937', // gray-800
-      colorBgElevated: '#1f2937', // gray-800 (dropdown background)
-      colorTextHeading: '#f9fafb', // gray-50
-      colorTextDescription: '#d1d5db', // gray-300
-      colorIcon: '#9ca3af', // gray-400
-      colorLink: '#818cf8', // indigo-400
-      colorLinkHover: '#677df6', // Slightly brighter hover
+      fontFamily: "Outfit, sans-serif",
+
+      colorPrimary: "#5a67f7", // Brighter primary for better visibility in dark
+      colorBorder: "#4b5563", // gray-600
+      colorText: "#e5e7eb", // gray-200
+      colorTextPlaceholder: "#9ca3af", // gray-400
+      colorBgContainer: "#1f2937", // gray-800
+      colorBgElevated: "#1f2937", // gray-800 (dropdown background)
+      colorTextHeading: "#f9fafb", // gray-50
+      colorTextDescription: "#d1d5db", // gray-300
+      colorIcon: "#9ca3af", // gray-400
+      colorLink: "#818cf8", // indigo-400
+      colorLinkHover: "#677df6", // Slightly brighter hover
       // Keep the same sizing values
       borderRadius: 6,
       fontSize: 14,
@@ -69,34 +73,33 @@ const darkTheme: ThemeConfig = {
   },
 };
 
-
-type TabOption = 'Daily' | 'Weekly' | 'Monthly' | 'Custom';
+type TabOption = "Daily" | "Weekly" | "Monthly" | "Custom";
 type PeriodMap = {
-  [key in TabOption]: ReportRequestParams['period'];
+  [key in TabOption]: ReportRequestParams["period"];
 };
 
 const PERIOD_MAP: PeriodMap = {
-  Daily: 'daily',
-  Weekly: 'weekly',
-  Monthly: 'monthly',
-  Custom: 'custom'
+  Daily: "daily",
+  Weekly: "weekly",
+  Monthly: "monthly",
+  Custom: "custom",
 };
 
 const SalesReport = () => {
-  const {theme} = useTheme()
-  const [activeTab, setActiveTab] = useState<TabOption>('Monthly');
+  const { theme } = useTheme();
+  const [activeTab, setActiveTab] = useState<TabOption>("Monthly");
   const [loading, setLoading] = useState<boolean>(false);
   const [reportData, setReportData] = useState<SalesReportData | null>(null);
   const [dateRange, setDateRange] = useState<[Date, Date] | null>(null);
   const [filters, setFilters] = useState<ReportRequestParams>({
-    period: PERIOD_MAP['Monthly'],
+    period: PERIOD_MAP["Monthly"],
     include_details: true,
   });
   const { RangePicker } = DatePicker;
-  const tabs: TabOption[] = ['Daily', 'Weekly', 'Monthly', 'Custom'];
+  const tabs: TabOption[] = ["Daily", "Weekly", "Monthly", "Custom"];
 
   const formatDateForAPI = (date: Date) => {
-    return dayjs(date).format('YYYY-MM-DD');
+    return dayjs(date).format("YYYY-MM-DD");
   };
 
   const loadReport = async () => {
@@ -106,12 +109,12 @@ const SalesReport = () => {
         ...filters,
         ...(dateRange && {
           start_date: formatDateForAPI(dateRange[0]),
-          end_date: formatDateForAPI(dateRange[1])
-        })
+          end_date: formatDateForAPI(dateRange[1]),
+        }),
       };
       const data = await fetchSalesReport(params);
       setReportData(data);
-      
+
       toast.success("Report loaded successfully!", {
         position: "top-center",
         autoClose: 3000,
@@ -125,8 +128,9 @@ const SalesReport = () => {
         transition: Bounce,
       });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load sales report';
-      
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load sales report";
+
       toast.error(errorMessage, {
         position: "top-center",
         autoClose: 5000,
@@ -144,18 +148,27 @@ const SalesReport = () => {
     }
   };
 
+  const handleExport = () => {
+    toast.success("Export started successfully!", {
+      position: "top-center",
+      autoClose: 3000,
+      style: { fontFamily: "Outfit, sans-serif" },
+    });
+    // Add your export logic here
+  };
+
   const handleTabChange = (tab: TabOption) => {
     setActiveTab(tab);
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       period: PERIOD_MAP[tab],
-      ...(tab !== 'Custom' && { 
+      ...(tab !== "Custom" && {
         start_date: undefined,
-        end_date: undefined 
-      })
+        end_date: undefined,
+      }),
     }));
 
-    if (tab === 'Custom' && !dateRange) {
+    if (tab === "Custom" && !dateRange) {
       // Set default range (last 30 days)
       const end = new Date();
       const start = new Date();
@@ -165,23 +178,23 @@ const SalesReport = () => {
   };
 
   const handleDateRangeChange = (
-    dates: [Dayjs | null, Dayjs | null] | null, 
+    dates: [Dayjs | null, Dayjs | null] | null,
     dateStrings: [string, string]
   ) => {
     if (!dates || !dates[0] || !dates[1]) {
       // Handle clear case
       setDateRange(null);
-      setFilters(prev => ({
+      setFilters((prev) => ({
         ...prev,
-        period: PERIOD_MAP['Monthly'],
+        period: PERIOD_MAP["Monthly"],
         start_date: undefined,
-        end_date: undefined
+        end_date: undefined,
       }));
       return;
     }
 
     const [start, end] = dates;
-    
+
     // Validate dates are in correct order
     if (start.isAfter(end)) {
       toast.error("End date must be after start date", {
@@ -194,7 +207,7 @@ const SalesReport = () => {
 
     // Limit date range if needed
     const maxRange = 365; // days
-    if (end.diff(start, 'days') > maxRange) {
+    if (end.diff(start, "days") > maxRange) {
       toast.error(`Date range cannot exceed ${maxRange} days`, {
         position: "top-center",
         autoClose: 5000,
@@ -204,11 +217,11 @@ const SalesReport = () => {
     }
 
     setDateRange([start.toDate(), end.toDate()]);
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      period: PERIOD_MAP['Custom'],
+      period: PERIOD_MAP["Custom"],
       start_date: formatDateForAPI(start.toDate()),
-      end_date: formatDateForAPI(end.toDate())
+      end_date: formatDateForAPI(end.toDate()),
     }));
   };
 
@@ -219,7 +232,7 @@ const SalesReport = () => {
   return (
     <div className="p-4">
       <PageBreadcrumb pageTitle="Sales Report" />
-      
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 my-6">
         <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
           <div className="flex space-x-1 p-1 rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
@@ -228,8 +241,8 @@ const SalesReport = () => {
                 key={tab}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                   activeTab === tab
-                    ? 'bg-brand-600 text-white shadow-md'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    ? "bg-brand-600 text-white shadow-md"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 }`}
                 onClick={() => handleTabChange(tab)}
                 disabled={loading}
@@ -238,34 +251,32 @@ const SalesReport = () => {
               </button>
             ))}
           </div>
-          
-          {activeTab === 'Custom' && (
-            <ConfigProvider theme={theme === 'dark' ? darkTheme : lightTheme}>
-            <RangePicker
-              onChange={handleDateRangeChange}
-              value={dateRange ? [dayjs(dateRange[0]), dayjs(dateRange[1])] : null}
-              disabledDate={(current) => current && current > dayjs().endOf('day')}
-              format="YYYY-MM-DD"
-              style={{
-                width: '100%',
-                maxWidth: '300px', // Adjust as needed
-              }}
-            />
-          </ConfigProvider>)}
+
+          {activeTab === "Custom" && (
+            <ConfigProvider theme={theme === "dark" ? darkTheme : lightTheme}>
+              <RangePicker
+                onChange={handleDateRangeChange}
+                value={
+                  dateRange ? [dayjs(dateRange[0]), dayjs(dateRange[1])] : null
+                }
+                disabledDate={(current) =>
+                  current && current > dayjs().endOf("day")
+                }
+                format="YYYY-MM-DD"
+                style={{
+                  width: "100%",
+                  maxWidth: "300px", // Adjust as needed
+                }}
+              />
+            </ConfigProvider>
+          )}
         </div>
-        
-        <Button 
-          size="md" 
-          variant="primary" 
+
+        <Button
+          size="md"
+          variant="primary"
           startIcon={<DownloadOutlined />}
-          onClick={() => {
-            toast.success("Export started successfully!", {
-              position: "top-center",
-              autoClose: 3000,
-              style: { fontFamily: "Outfit, sans-serif" },
-            });
-            // Add your export logic here
-          }}
+          onClick={handleExport}
           disabled={loading}
         >
           Export
@@ -279,15 +290,20 @@ const SalesReport = () => {
       )}
 
       {!loading && reportData && (
-        <div> 
+        <div>
           <h1 className="mt-14 font-bold text-gray-800 text-title-sm dark:text-white/90 mb-6">
-            {reportData?.period === 'custom' 
+            {reportData?.period === "custom"
               ? `${reportData?.start_date} to ${reportData?.end_date}`
-              : `${(reportData?.period ?? '').charAt(0).toUpperCase() + (reportData?.period ?? '').slice(1)} Report (${reportData?.start_date || 'N/A'} to ${reportData?.end_date || 'N/A'})`}
+              : `${
+                  (reportData?.period ?? "").charAt(0).toUpperCase() +
+                  (reportData?.period ?? "").slice(1)
+                } Report (${reportData?.start_date || "N/A"} to ${
+                  reportData?.end_date || "N/A"
+                })`}
           </h1>
           <div className="grid grid-cols-12 gap-4 md:gap-6">
             <div className="col-span-12 xl:col-span-6">
-              <SalesStatistics reportData={reportData}/>
+              <SalesStatistics reportData={reportData} />
             </div>
             <div className="col-span-12 space-y-6 xl:col-span-6">
               <SalesMetrics data={reportData} />
@@ -437,8 +453,8 @@ export default SalesReport;
 //             </Col>
 
 //             <Col>
-//               <Button 
-//                 type="primary" 
+//               <Button
+//                 type="primary"
 //                 icon={<DownloadOutlined />}
 //                 onClick={handleExport}
 //                 loading={loading}
@@ -452,12 +468,12 @@ export default SalesReport;
 //         {loading && <Spin size="large" className="report-spinner" />}
 
 //         {error && (
-//           <Alert 
-//             message="Error" 
-//             description={error} 
-//             type="error" 
-//             showIcon 
-//             closable 
+//           <Alert
+//             message="Error"
+//             description={error}
+//             type="error"
+//             showIcon
+//             closable
 //             onClose={() => setError(null)}
 //           />
 //         )}
@@ -465,7 +481,7 @@ export default SalesReport;
 //         {reportData && (
 //           <>
 //             <ReportSummary data={reportData} />
-            
+
 //             <Tabs defaultActiveKey="1" className="report-tabs">
 //               <TabPane tab="Charts" key="1">
 //                 <Row gutter={[16, 16]}>
@@ -477,10 +493,10 @@ export default SalesReport;
 //                   </Col>
 //                 </Row>
 //               </TabPane>
-              
+
 //               <TabPane tab="Transactions" key="2">
 //                 <TransactionsTable
-//                   transactions={reportData.transactions || []} 
+//                   transactions={reportData.transactions || []}
 //                 />
 //               </TabPane>
 //             </Tabs>
