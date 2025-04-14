@@ -56,12 +56,13 @@ export type Transaction = {
     grand_total: number;
     status: "Ready for Pick Up" | "Finishing" | "Pending";
     date_created: string;
-  }
+}
 export type ButtonProps = React.ComponentPropsWithoutRef<"button"> & {
-  children: React.ReactNode; // Button text or content
-  size?: "sm" | "md"; // Button size
-  variant?: "primary" | "outline" | "error"; // Button variant
-  startIcon?: React.ReactNode; // Icon before the text
-  endIcon?: React.ReactNode; // Icon after the text
-  dataModal?:  string;
+    children: React.ReactNode; // Button text or content
+    size?: "sm" | "md"; // Button size
+    variant?: "primary" | "outline" | "error"; // Button variant
+    loading?: boolean;
+    startIcon?: React.ReactNode; // Icon before the text
+    endIcon?: React.ReactNode; // Icon after the text
+    dataModal?: string;
 }

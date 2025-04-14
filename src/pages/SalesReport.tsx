@@ -7,6 +7,7 @@ import Button from "../components/ui/button/Button";
 import { DatePicker, theme } from "antd";
 import {
   fetchSalesReport,
+  exportSalesReport,
   ReportRequestParams,
   SalesReportData,
 } from "@/api/reportService";
@@ -48,23 +49,21 @@ const lightTheme: ThemeConfig = {
 
 // Dark theme configuration
 const darkTheme: ThemeConfig = {
-  algorithm: theme.darkAlgorithm, // This applies the dark mode algorithm
+  algorithm: theme.darkAlgorithm,
   components: {
     DatePicker: {
       fontFamily: "Outfit, sans-serif",
-
-      colorPrimary: "#5a67f7", // Brighter primary for better visibility in dark
-      colorBorder: "#4b5563", // gray-600
-      colorText: "#e5e7eb", // gray-200
-      colorTextPlaceholder: "#9ca3af", // gray-400
-      colorBgContainer: "#1f2937", // gray-800
-      colorBgElevated: "#1f2937", // gray-800 (dropdown background)
-      colorTextHeading: "#f9fafb", // gray-50
-      colorTextDescription: "#d1d5db", // gray-300
-      colorIcon: "#9ca3af", // gray-400
-      colorLink: "#818cf8", // indigo-400
-      colorLinkHover: "#677df6", // Slightly brighter hover
-      // Keep the same sizing values
+      colorPrimary: "#5a67f7",
+      colorBorder: "#4b5563",
+      colorText: "#e5e7eb",
+      colorTextPlaceholder: "#9ca3af",
+      colorBgContainer: "#1f2937",
+      colorBgElevated: "#1f2937",
+      colorTextHeading: "#f9fafb",
+      colorTextDescription: "#d1d5db",
+      colorIcon: "#9ca3af",
+      colorLink: "#818cf8",
+      colorLinkHover: "#677df6",
       borderRadius: 6,
       fontSize: 14,
       paddingSM: 8,
@@ -89,16 +88,18 @@ const SalesReport = () => {
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState<TabOption>("Monthly");
   const [loading, setLoading] = useState<boolean>(false);
+  const [exportLoading, setExportLoading] = useState<boolean>(false);
   const [reportData, setReportData] = useState<SalesReportData | null>(null);
   const [dateRange, setDateRange] = useState<[Date, Date] | null>(null);
   const [filters, setFilters] = useState<ReportRequestParams>({
     period: PERIOD_MAP["Monthly"],
     include_details: true,
   });
-  const { RangePicker } = DatePicker;
+
   const tabs: TabOption[] = ["Daily", "Weekly", "Monthly", "Custom"];
 
-  const formatDateForAPI = (date: Date) => {
+  const formatDateForAPI = (date: Date | string) => {
+    if (typeof date === "string") return date;
     return dayjs(date).format("YYYY-MM-DD");
   };
 
@@ -148,13 +149,72 @@ const SalesReport = () => {
     }
   };
 
-  const handleExport = () => {
-    toast.success("Export started successfully!", {
-      position: "top-center",
-      autoClose: 3000,
-      style: { fontFamily: "Outfit, sans-serif" },
-    });
-    // Add your export logic here
+  const handleExport = async () => {
+    try {
+      if (!reportData) {
+        toast.error("No report data available to export", {
+          position: "top-center",
+          autoClose: 5000,
+          style: { fontFamily: "Outfit, sans-serif" },
+        });
+        return;
+      }
+
+      setExportLoading(true);
+
+      const params: ReportRequestParams = {
+        ...filters,
+        ...(dateRange && {
+          start_date: formatDateForAPI(dateRange[0]),
+          end_date: formatDateForAPI(dateRange[1]),
+        }),
+      };
+
+      const blob = await exportSalesReport(params);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+
+      const filename = `sales_report_${params.start_date || "start"}_to_${
+        params.end_date || "end"
+      }.xlsx`;
+      link.setAttribute("download", filename);
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      toast.success("Export completed successfully!", {
+        position: "top-center",
+        autoClose: 3000,
+        style: { fontFamily: "Outfit, sans-serif" },
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to export report";
+
+      toast.error(errorMessage, {
+        position: "top-center",
+        autoClose: 5000,
+        style: { fontFamily: "Outfit, sans-serif" },
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   const handleTabChange = (tab: TabOption) => {
@@ -169,7 +229,6 @@ const SalesReport = () => {
     }));
 
     if (tab === "Custom" && !dateRange) {
-      // Set default range (last 30 days)
       const end = new Date();
       const start = new Date();
       start.setDate(start.getDate() - 30);
@@ -182,7 +241,6 @@ const SalesReport = () => {
     dateStrings: [string, string]
   ) => {
     if (!dates || !dates[0] || !dates[1]) {
-      // Handle clear case
       setDateRange(null);
       setFilters((prev) => ({
         ...prev,
@@ -195,7 +253,6 @@ const SalesReport = () => {
 
     const [start, end] = dates;
 
-    // Validate dates are in correct order
     if (start.isAfter(end)) {
       toast.error("End date must be after start date", {
         position: "top-center",
@@ -205,8 +262,7 @@ const SalesReport = () => {
       return;
     }
 
-    // Limit date range if needed
-    const maxRange = 365; // days
+    const maxRange = 365;
     if (end.diff(start, "days") > maxRange) {
       toast.error(`Date range cannot exceed ${maxRange} days`, {
         position: "top-center",
@@ -265,7 +321,7 @@ const SalesReport = () => {
                 format="YYYY-MM-DD"
                 style={{
                   width: "100%",
-                  maxWidth: "300px", // Adjust as needed
+                  maxWidth: "300px",
                 }}
               />
             </ConfigProvider>
@@ -277,7 +333,8 @@ const SalesReport = () => {
           variant="primary"
           startIcon={<DownloadOutlined />}
           onClick={handleExport}
-          disabled={loading}
+          disabled={loading || exportLoading}
+          loading={exportLoading}
         >
           Export
         </Button>
@@ -307,7 +364,6 @@ const SalesReport = () => {
             </div>
             <div className="col-span-12 space-y-6 xl:col-span-6">
               <SalesMetrics data={reportData} />
-              {/* <SalesBreakdownChart/> */}
             </div>
           </div>
         </div>
