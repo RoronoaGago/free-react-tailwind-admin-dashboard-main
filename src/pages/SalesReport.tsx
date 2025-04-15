@@ -346,7 +346,9 @@ const SalesReport = () => {
         <div>
           <h1 className="mt-14 font-bold text-gray-800 text-title-sm dark:text-white/90 mb-6">
             {reportData?.period === "daily"
-              ? dayjs(reportData?.start_date).format("MMM D, YYYY") // Daily format: "Apr 15, 2025"
+              ? "Daily Report  (" +
+                dayjs(reportData?.start_date).format("MMM D, YYYY") +
+                ")" // Daily format: "Apr 15, 2025"
               : reportData?.period === "custom"
               ? `${dayjs(reportData?.start_date).format(
                   "MMM D, YYYY"
