@@ -345,14 +345,18 @@ const SalesReport = () => {
       {!loading && reportData && (
         <div>
           <h1 className="mt-14 font-bold text-gray-800 text-title-sm dark:text-white/90 mb-6">
-            {reportData?.period === "custom"
-              ? `${reportData?.start_date} to ${reportData?.end_date}`
+            {reportData?.period === "daily"
+              ? dayjs(reportData?.start_date).format("MMM D, YYYY") // Daily format: "Apr 15, 2025"
+              : reportData?.period === "custom"
+              ? `${dayjs(reportData?.start_date).format(
+                  "MMM D, YYYY"
+                )} to ${dayjs(reportData?.end_date).format("MMM D, YYYY")}`
               : `${
                   (reportData?.period ?? "").charAt(0).toUpperCase() +
                   (reportData?.period ?? "").slice(1)
-                } Report (${reportData?.start_date || "N/A"} to ${
-                  reportData?.end_date || "N/A"
-                })`}
+                } Report (${dayjs(reportData?.start_date).format(
+                  "MMM D, YYYY"
+                )} to ${dayjs(reportData?.end_date).format("MMM D, YYYY")})`}
           </h1>
           <div className="grid grid-cols-12 gap-4 md:gap-6">
             <div className="col-span-12 xl:col-span-6">
