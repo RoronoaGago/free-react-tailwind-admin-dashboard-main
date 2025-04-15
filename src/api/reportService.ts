@@ -66,15 +66,50 @@ export const fetchSalesReport = async (params: ReportRequestParams): Promise<Sal
   }
 };
 
-export const exportSalesReport = async (params: ReportRequestParams): Promise<Blob> => {
+export const exportSalesReport = async (
+  params: ReportRequestParams
+): Promise<{ blob: Blob; filename: string }> => {
   try {
+    console.log('[exportSalesReport] Starting export with params:', params);
+
     const response = await axios.get(`${API_BASE_URL}/reports/sales/export/`, {
       params,
       responseType: 'blob',
     });
-    return response.data;
+
+    console.log('[exportSalesReport] Received response with headers:', response.headers);
+
+    // Extract filename from Content-Disposition header
+    const contentDisposition = response.headers['content-disposition'];
+    console.log('[exportSalesReport] Content-Disposition header:', contentDisposition);
+
+    let filename = 'Sales Report.xlsx'; // Default fallback
+
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+      console.log('[exportSalesReport] Filename match result:', filenameMatch);
+
+      if (filenameMatch?.[1]) {
+        filename = filenameMatch[1];
+      }
+    }
+
+    console.log('[exportSalesReport] Determined filename:', filename);
+    console.log('[exportSalesReport] Response data type:', typeof response.data);
+
+    return {
+      blob: response.data,
+      filename,
+    };
   } catch (error) {
+    console.error('[exportSalesReport] Error occurred:', error);
+
     if (axios.isAxiosError(error)) {
+      console.error('[exportSalesReport] Axios error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.response?.headers
+      });
       throw new Error(error.response?.data?.message || 'Failed to export report');
     }
     throw new Error('An unexpected error occurred');

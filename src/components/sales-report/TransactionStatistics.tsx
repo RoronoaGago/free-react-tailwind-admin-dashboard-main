@@ -6,10 +6,10 @@ interface SalesStatisticsProps {
   reportData: SalesReportData | null;
 }
 
-export default function SalesStatistics({ reportData }: SalesStatisticsProps) {
-  console.log(reportData);
+export default function TransactionStatistics({
+  reportData,
+}: SalesStatisticsProps) {
   // Prepare chart data from reportData
-
   const prepareChartData = () => {
     if (!reportData || !reportData.transactions) {
       return {
@@ -18,8 +18,8 @@ export default function SalesStatistics({ reportData }: SalesStatisticsProps) {
       };
     }
 
-    // Group transactions by date
-    const transactionsByDate: Record<string, number> = {};
+    // Group transactions by date and count them
+    const transactionsCountByDate: Record<string, number> = {};
 
     reportData.transactions.forEach((transaction) => {
       const date = new Date(transaction.created_at).toLocaleDateString(
@@ -30,29 +30,17 @@ export default function SalesStatistics({ reportData }: SalesStatisticsProps) {
         }
       );
 
-      if (!transactionsByDate[date]) {
-        transactionsByDate[date] = 0;
-      }
-
-      // Convert grand_total to number before adding
-      const amount =
-        typeof transaction.grand_total === "string"
-          ? parseFloat(transaction.grand_total)
-          : transaction.grand_total;
-
-      transactionsByDate[date] = parseFloat(
-        (transactionsByDate[date] + amount).toFixed(2)
-      );
+      transactionsCountByDate[date] = (transactionsCountByDate[date] || 0) + 1;
     });
 
     // Sort dates chronologically
-    const sortedDates = Object.keys(transactionsByDate).sort((a, b) => {
+    const sortedDates = Object.keys(transactionsCountByDate).sort((a, b) => {
       return new Date(a).getTime() - new Date(b).getTime();
     });
 
     return {
       categories: sortedDates,
-      seriesData: sortedDates.map((date) => transactionsByDate[date]),
+      seriesData: sortedDates.map((date) => transactionsCountByDate[date]),
     };
   };
 
@@ -61,28 +49,42 @@ export default function SalesStatistics({ reportData }: SalesStatisticsProps) {
   const options: ApexOptions = {
     legend: {
       show: false,
-      position: "top",
-      horizontalAlign: "left",
     },
     colors: ["#465FFF"],
     chart: {
       fontFamily: "Outfit, sans-serif",
       height: 310,
-      type: "bar", // Changed from 'area'
+      type: "line",
       toolbar: {
         show: false,
       },
-    },
-    plotOptions: {
-      bar: {
-        horizontal: false,
-        columnWidth: "39%", // Adjust width as needed
-        borderRadius: 5,
-        borderRadiusApplication: "end",
-        distributed: false,
+      zoom: {
+        enabled: false,
       },
     },
-    // Remove stroke and fill options as they're not needed for bar charts
+    stroke: {
+      curve: "smooth",
+      width: 3,
+    },
+    fill: {
+      type: "gradient",
+      gradient: {
+        opacityFrom: 0.55,
+        opacityTo: 1,
+      },
+    },
+    markers: {
+      size: 5,
+      colors: ["#3B82F6"],
+      strokeColors: "#fff",
+      strokeWidth: 2,
+      hover: {
+        size: 7,
+      },
+    },
+    dataLabels: {
+      enabled: false,
+    },
     grid: {
       xaxis: {
         lines: {
@@ -95,9 +97,6 @@ export default function SalesStatistics({ reportData }: SalesStatisticsProps) {
         },
       },
     },
-    dataLabels: {
-      enabled: false,
-    },
     tooltip: {
       enabled: true,
       x: {
@@ -105,7 +104,7 @@ export default function SalesStatistics({ reportData }: SalesStatisticsProps) {
       },
       y: {
         formatter: function (value) {
-          return "₱" + value.toFixed(2);
+          return `${value}`;
         },
       },
     },
@@ -118,8 +117,10 @@ export default function SalesStatistics({ reportData }: SalesStatisticsProps) {
       axisTicks: {
         show: false,
       },
-      tooltip: {
-        enabled: false,
+      labels: {
+        style: {
+          fontSize: "12px",
+        },
       },
     },
     yaxis: {
@@ -129,34 +130,36 @@ export default function SalesStatistics({ reportData }: SalesStatisticsProps) {
           colors: ["#6B7280"],
         },
         formatter: function (value) {
-          return "₱" + value.toFixed(2);
+          return Math.floor(value).toString(); // Whole numbers only
         },
       },
       title: {
-        text: "Sales",
+        text: "Transactions",
         style: {
           fontSize: "12px",
           color: "#6B7280",
         },
       },
+      min: 0, // Start y-axis from 0
+      forceNiceScale: true,
     },
   };
 
   const series = [
     {
-      name: "Sales",
+      name: "Transactions",
       data: chartData.seriesData,
     },
   ];
 
   const getDateRangeText = () => {
-    if (!reportData) return "Sales data";
+    if (!reportData) return "Transaction data";
 
     if (reportData.period === "custom") {
-      return `Sales data from ${reportData.start_date} to ${reportData.end_date}`;
+      return `Transactions from ${reportData.start_date} to ${reportData.end_date}`;
     }
 
-    return `Sales data for the ${reportData.period} period (${reportData.start_date} to ${reportData.end_date})`;
+    return `Transactions for the ${reportData.period} period (${reportData.start_date} to ${reportData.end_date})`;
   };
 
   return (
@@ -164,7 +167,7 @@ export default function SalesStatistics({ reportData }: SalesStatisticsProps) {
       <div className="flex flex-col gap-5 mb-6 sm:flex-row sm:justify-between">
         <div className="w-full">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-            Statistics
+            Transaction Statistics
           </h3>
           <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
             {getDateRangeText()}
@@ -172,13 +175,13 @@ export default function SalesStatistics({ reportData }: SalesStatisticsProps) {
         </div>
       </div>
 
-      <div className="max-w-full overflow-x-auto custom-scrollbar">
+      <div className="max-w-full overflow-hidden">
         <div className="min-w-[1000px] xl:min-w-full">
           {chartData.categories.length > 0 ? (
-            <Chart options={options} series={series} type="bar" height={310} />
+            <Chart options={options} series={series} type="line" height={310} />
           ) : (
             <div className="flex items-center justify-center h-[310px] text-gray-500">
-              No sales data available for the selected period
+              No transaction data available for the selected period
             </div>
           )}
         </div>

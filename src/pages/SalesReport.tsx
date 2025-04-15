@@ -19,6 +19,7 @@ import dayjs from "dayjs";
 import { ConfigProvider } from "antd";
 import type { ThemeConfig } from "antd";
 import { useTheme } from "@/context/ThemeContext";
+import TransactionStatistics from "@/components/sales-report/TransactionStatistics";
 
 const { RangePicker } = DatePicker;
 
@@ -151,69 +152,64 @@ const SalesReport = () => {
 
   const handleExport = async () => {
     try {
+      console.log("[handleExport] Starting export process");
+
       if (!reportData) {
-        toast.error("No report data available to export", {
-          position: "top-center",
-          autoClose: 5000,
-          style: { fontFamily: "Outfit, sans-serif" },
-        });
+        console.warn("[handleExport] No report data available");
+        toast.error("No report data available to export");
         return;
       }
 
       setExportLoading(true);
+      console.log("[handleExport] Set loading state to true");
 
       const params: ReportRequestParams = {
         ...filters,
-        ...(dateRange && {
-          start_date: formatDateForAPI(dateRange[0]),
-          end_date: formatDateForAPI(dateRange[1]),
-        }),
       };
 
-      const blob = await exportSalesReport(params);
+      console.log("[handleExport] Prepared request params:", params);
+
+      // Get both blob and filename from the API
+      console.log("[handleExport] Calling exportSalesReport...");
+      const { blob, filename } = await exportSalesReport(params);
+      console.log("[handleExport] Received blob and filename:", {
+        filename,
+        blob,
+      });
+
       const url = window.URL.createObjectURL(blob);
+      console.log("[handleExport] Created object URL:", url);
+
       const link = document.createElement("a");
       link.href = url;
-
-      const filename = `sales_report_${params.start_date || "start"}_to_${
-        params.end_date || "end"
-      }.xlsx`;
       link.setAttribute("download", filename);
+      console.log(
+        "[handleExport] Created download link with filename:",
+        filename
+      );
 
       document.body.appendChild(link);
       link.click();
-      link.remove();
+      console.log("[handleExport] Triggered file download");
 
-      toast.success("Export completed successfully!", {
-        position: "top-center",
-        autoClose: 3000,
-        style: { fontFamily: "Outfit, sans-serif" },
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-        transition: Bounce,
-      });
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        console.log("[handleExport] Cleaned up DOM and revoked object URL");
+      }, 100);
+
+      toast.success("Export completed successfully!");
+      console.log("[handleExport] Export completed successfully");
     } catch (err) {
+      console.error("[handleExport] Export failed:", err);
+
       const errorMessage =
         err instanceof Error ? err.message : "Failed to export report";
-
-      toast.error(errorMessage, {
-        position: "top-center",
-        autoClose: 5000,
-        style: { fontFamily: "Outfit, sans-serif" },
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-        transition: Bounce,
-      });
+      toast.error(errorMessage);
     } finally {
       setExportLoading(false);
+      console.log("[handleExport] Set loading state to false");
     }
   };
 
@@ -364,6 +360,9 @@ const SalesReport = () => {
             </div>
             <div className="col-span-12 space-y-6 xl:col-span-6">
               <SalesMetrics data={reportData} />
+            </div>
+            <div className="col-span-12 xl:col-span-6">
+              <TransactionStatistics reportData={reportData} />
             </div>
           </div>
         </div>
