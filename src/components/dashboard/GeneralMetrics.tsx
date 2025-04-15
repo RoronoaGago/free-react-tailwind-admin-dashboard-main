@@ -1,22 +1,25 @@
+import { formatCurrency } from "@/lib/helpers";
 import { ReceiptIcon, SalesIcon } from "../../icons";
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 export default function GeneralMetrics() {
   const [metrics, setMetrics] = useState({
     total_sales: 0,
     total_transactions: 0,
-    ongoing_services: 0
+    ongoing_services: 0,
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const response = await fetch('http://127.0.0.1:8000/api/api/dashboard/metrics/');
+        const response = await fetch(
+          "http://127.0.0.1:8000/api/api/dashboard/metrics/"
+        );
         const data = await response.json();
         setMetrics(data);
       } catch (error) {
-        console.error('Error fetching metrics:', error);
+        console.error("Error fetching metrics:", error);
       } finally {
         setLoading(false);
       }
@@ -42,7 +45,7 @@ export default function GeneralMetrics() {
               Total Sales
             </span>
             <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              ₱{metrics.total_sales.toLocaleString()}
+              ₱{formatCurrency(metrics.total_sales)}
             </h4>
           </div>
           <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
