@@ -112,6 +112,7 @@ const CustomerFrequencyReport = () => {
   useEffect(() => {
     fetchCustomerFrequencyData();
   }, [filters]);
+  // Add this helper function to format the report title
 
   const fetchCustomerFrequencyData = async () => {
     setLoading(true);
@@ -210,38 +211,74 @@ const CustomerFrequencyReport = () => {
   };
 
   const handleExport = async () => {
-    setExportLoading(true);
     try {
+      console.log("[handleExport] Starting customer frequency export process");
+      setExportLoading(true);
+
       const response = await axios.get(
         "http://127.0.0.1:8000/api/reports/customer-frequency/export/",
         {
           params: filters,
-          responseType: "blob", // Important for file downloads
+          responseType: "blob",
         }
       );
+
+      console.log(
+        "[handleExport] Received response with headers:",
+        response.headers
+      );
+
+      // Extract filename from Content-Disposition header if available
+      const contentDisposition = response.headers["content-disposition"];
+      let filename = `Customer Frequency Report ${
+        new Date().toISOString().split("T")[0]
+      }.xlsx`;
+
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch?.[1]) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      console.log("[handleExport] Using filename:", filename);
 
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute(
-        "download",
-        `customer-frequency-report-${new Date().toISOString()}.xlsx`
-      );
+      link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
-      link.remove();
 
-      toast.success("Export completed successfully!");
-    } catch (error) {
-      toast.error("Failed to export report", {
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        console.log("[handleExport] Cleaned up DOM and revoked object URL");
+      }, 100);
+
+      toast.success("Export completed successfully!", {
         position: "top-center",
         autoClose: 5000,
         style: { fontFamily: "Outfit, sans-serif" },
       });
-      console.error("Error exporting report:", error);
+      console.log("[handleExport] Export completed successfully");
+    } catch (error) {
+      console.error("[handleExport] Export failed:", error);
+
+      const errorMessage = axios.isAxiosError(error)
+        ? error.response?.data?.message || "Failed to export report"
+        : "An unexpected error occurred";
+
+      toast.error(errorMessage, {
+        position: "top-center",
+        autoClose: 5000,
+        style: { fontFamily: "Outfit, sans-serif" },
+      });
     } finally {
       setExportLoading(false);
+      console.log("[handleExport] Set loading state to false");
     }
   };
 
@@ -298,20 +335,39 @@ const CustomerFrequencyReport = () => {
           Export
         </Button>
       </div>
-
-      <div className="grid grid-cols-12 gap-4 md:gap-6">
-        <div className="col-span-12 custom-scrollbar">
-          <ComponentCard title="Top Customers By Total Transactions Made">
-            <CustomerFequencyTable
-              data={reportData || null}
-              loading={loading}
-            />
-          </ComponentCard>
+      {!loading && reportData && (
+        <div>
+          <h1 className="mt-14 font-bold text-gray-800 text-title-sm dark:text-white/90 mb-6">
+            {reportData[0]?.period === "daily"
+              ? "Daily Report  (" +
+                dayjs(reportData[0]?.start_date).format("MMM D, YYYY") +
+                ")" // Daily format: "Apr 15, 2025"
+              : reportData[0]?.period === "custom"
+              ? `${dayjs(reportData[0]?.start_date).format(
+                  "MMM D, YYYY"
+                )} to ${dayjs(reportData[0]?.end_date).format("MMM D, YYYY")}`
+              : `${
+                  (reportData[0]?.period ?? "").charAt(0).toUpperCase() +
+                  (reportData[0]?.period ?? "").slice(1)
+                } Report (${dayjs(reportData[0]?.start_date).format(
+                  "MMM D, YYYY"
+                )} to ${dayjs(reportData[0]?.end_date).format("MMM D, YYYY")})`}
+          </h1>
+          <div className="grid grid-cols-12 gap-4 md:gap-6">
+            <div className="col-span-12 custom-scrollbar">
+              <ComponentCard title="Top Customers By Total Transactions Made">
+                <CustomerFequencyTable
+                  data={reportData || null}
+                  loading={loading}
+                />
+              </ComponentCard>
+            </div>
+            <div className="col-span-10">
+              <FrequencyPieChart data={reportData || []} />
+            </div>
+          </div>
         </div>
-        <div className="col-span-10">
-          <FrequencyPieChart data={reportData || []} />
-        </div>
-      </div>
+      )}
     </div>
   );
 };
