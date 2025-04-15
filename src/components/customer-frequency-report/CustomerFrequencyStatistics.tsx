@@ -75,7 +75,6 @@ export default function CustomerFrequencyStatistics() {
         "Mar. 14",
         "Mar. 15",
         "Mar. 16",
-        
       ],
       axisBorder: {
         show: false, // Hide x-axis border
@@ -108,7 +107,6 @@ export default function CustomerFrequencyStatistics() {
       name: "Customer Frequency",
       data: [90, 60, 45, 35, 25, 67, 49, 59, 62, 43, 64, 87],
     },
-    
   ];
   return (
     <div className="rounded-2xl border border-gray-200 bg-white px-5 pb-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
@@ -121,7 +119,6 @@ export default function CustomerFrequencyStatistics() {
             Frequency data from March 3, 2025 to March 16, 2025
           </p>
         </div>
-        
       </div>
 
       <div className="max-w-full overflow-x-auto custom-scrollbar">

@@ -45,7 +45,7 @@ export default function GeneralMetrics() {
               Total Sales
             </span>
             <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              ₱{formatCurrency(metrics.total_sales)}
+              {formatCurrency(metrics.total_sales)}
             </h4>
           </div>
           <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
