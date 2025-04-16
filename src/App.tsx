@@ -27,8 +27,9 @@ import SalesReport from "./pages/SalesReport";
 import CustomerFrequencyReport from "./pages/CustomerFrequencyReport";
 import ManageTransactions from "./pages/ManageTransactionAndSales";
 import ManageServideStatus from "./pages/ManageServiceStatus";
+import TransactionLookup from "./components/TransactionLookup";
 
-const PrivateRoute = ({ element }: {element: ReactNode}) => {
+const PrivateRoute = ({ element }: { element: ReactNode }) => {
   const { user } = useAuth();
   return user ? element : <Navigate to="/" />;
 };
@@ -39,16 +40,26 @@ export default function App() {
         <ScrollToTop />
         <Routes>
           {/* Dashboard Layout */}
+          <Route path="/transaction-lookup" element={<TransactionLookup />} />
           <Route element={<AppLayout />}>
-            
-            <Route path="/" element={<PrivateRoute element={<Home />} />}/>
+            <Route path="/" element={<PrivateRoute element={<Home />} />} />
 
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
-            <Route path="/users" element={<PrivateRoute element={<ManageUsers />} />}/>
-            <Route path="/transactions" element={<PrivateRoute element={<ManageTransactions />} />} />
-            <Route path="/status" element={<PrivateRoute element={<ManageServideStatus />} />} />
+            <Route
+              path="/users"
+              element={<PrivateRoute element={<ManageUsers />} />}
+            />
+            <Route
+              path="/transactions"
+              element={<PrivateRoute element={<ManageTransactions />} />}
+            />
+            <Route
+              path="/status"
+              element={<PrivateRoute element={<ManageServideStatus />} />}
+            />
             <Route path="/calendar" element={<Calendar />} />
+
             <Route path="/blank" element={<Blank />} />
 
             {/* Forms */}
@@ -59,7 +70,10 @@ export default function App() {
 
             {/* Generate Report */}
             <Route path="/generate-report/sales" element={<SalesReport />} />
-            <Route path="/generate-report/customer-frequency" element={<CustomerFrequencyReport />} />
+            <Route
+              path="/generate-report/customer-frequency"
+              element={<CustomerFrequencyReport />}
+            />
             {/* Ui Elements */}
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/avatars" element={<Avatars />} />
