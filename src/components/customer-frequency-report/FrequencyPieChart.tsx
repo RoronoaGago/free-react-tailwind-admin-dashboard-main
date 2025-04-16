@@ -1,5 +1,6 @@
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
+import { CustomerData } from "@/pages/CustomerFrequencyReport";
 
 interface CustomerFrequencyData {
   id: number;
@@ -18,7 +19,7 @@ interface CustomerFrequencyData {
 }
 
 interface CustomerFrequencyPieChartProps {
-  data: CustomerFrequencyData[] | null;
+  data: CustomerData[] | null;
 }
 
 export default function FrequencyPieChart({
@@ -125,7 +126,7 @@ export default function FrequencyPieChart({
       custom: function ({ series, seriesIndex, w }) {
         const customer = topCustomers[seriesIndex];
         return `
-          <div class="apexcharts-tooltip-custom bg-white shadow-lg rounded-lg p-3 border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+          <div class="bg-white p-3 dark:bg-gray-900 ">
             <div class="text-sm font-semibold text-gray-900 dark:text-white">
               ${customer.first_name} ${customer.last_name}
             </div>

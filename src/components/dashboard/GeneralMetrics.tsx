@@ -1,33 +1,16 @@
 import { formatCurrency } from "@/lib/helpers";
 import { ReceiptIcon, SalesIcon } from "../../icons";
-import { useEffect, useState } from "react";
+import { MetricsData } from "@/pages/Dashboard/Home";
 
-export default function GeneralMetrics() {
-  const [metrics, setMetrics] = useState({
-    total_sales: 0,
-    total_transactions: 0,
-    ongoing_services: 0,
-  });
-  const [loading, setLoading] = useState(true);
+type GeneralMetricsProps = {
+  metrics: MetricsData;
+  loading: boolean;
+};
 
-  useEffect(() => {
-    const fetchMetrics = async () => {
-      try {
-        const response = await fetch(
-          "http://127.0.0.1:8000/api/api/dashboard/metrics/"
-        );
-        const data = await response.json();
-        setMetrics(data);
-      } catch (error) {
-        console.error("Error fetching metrics:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMetrics();
-  }, []);
-
+export default function GeneralMetrics({
+  metrics,
+  loading,
+}: GeneralMetricsProps) {
   if (loading) {
     return <div>Loading metrics...</div>;
   }

@@ -12,6 +12,7 @@ import { DownloadOutlined } from "@ant-design/icons";
 import dayjs, { Dayjs } from "dayjs";
 import { toast } from "react-toastify";
 import FrequencyPieChart from "@/components/customer-frequency-report/FrequencyPieChart";
+import CustomerFrequencyStatistics from "@/components/customer-frequency-report/CustomerFrequencyStatistics";
 
 const { RangePicker } = DatePicker;
 
@@ -77,20 +78,52 @@ const PERIOD_MAP: PeriodMap = {
   Custom: "custom",
 };
 
-interface CustomerFrequencyData {
+interface CustomerFrequencyReport {
+  period: string;
+  start_date: string;
+  end_date: string;
+  total_customers: number;
+  total_transactions: number;
+  total_spent: number;
+  average_spent: number;
+  customer_breakdown: CustomerData[];
+  spending_breakdown: {
+    high: number;
+    medium: number;
+    low: number;
+  };
+  frequency_breakdown: {
+    frequent: number;
+    occasional: number;
+    one_time: number;
+  };
+  transactions?: Transaction[];
+}
+
+export interface CustomerData {
   id: number;
   first_name: string;
   last_name: string;
   contact_number: string;
-  address: string;
+  address?: string;
   total_transactions: number;
   total_spent: number;
   average_spent: number;
   last_transaction_date: string;
-  period: string;
-  start_date: string;
-  end_date: string;
-  transactions?: any[];
+  transaction_frequency?: number; // days between transactions
+  customer_since?: string;
+}
+interface Transaction {
+  id: number;
+  customer: {
+    first_name: string;
+    last_name: string;
+    contact_number: string;
+  };
+  service_type: string;
+  status: string;
+  grand_total: number;
+  created_at: string;
 }
 
 const CustomerFrequencyReport = () => {
@@ -98,7 +131,7 @@ const CustomerFrequencyReport = () => {
   const [activeTab, setActiveTab] = useState<TabOption>("Monthly");
   const [loading, setLoading] = useState<boolean>(false);
   const [exportLoading, setExportLoading] = useState<boolean>(false);
-  const [reportData, setReportData] = useState<CustomerFrequencyData[] | null>(
+  const [reportData, setReportData] = useState<CustomerFrequencyReport | null>(
     null
   );
   const [dateRange, setDateRange] = useState<[Date, Date] | null>(null);
@@ -338,32 +371,32 @@ const CustomerFrequencyReport = () => {
       {!loading && reportData && (
         <div>
           <h1 className="mt-14 font-bold text-gray-800 text-title-sm dark:text-white/90 mb-6">
-            {reportData[0]?.period === "daily"
+            {reportData.period === "daily"
               ? "Daily Report  (" +
-                dayjs(reportData[0]?.start_date).format("MMM D, YYYY") +
+                dayjs(reportData.start_date).format("MMM D, YYYY") +
                 ")" // Daily format: "Apr 15, 2025"
-              : reportData[0]?.period === "custom"
-              ? `${dayjs(reportData[0]?.start_date).format(
+              : reportData.period === "custom"
+              ? `${dayjs(reportData.start_date).format(
                   "MMM D, YYYY"
-                )} to ${dayjs(reportData[0]?.end_date).format("MMM D, YYYY")}`
+                )} to ${dayjs(reportData.end_date).format("MMM D, YYYY")}`
               : `${
-                  (reportData[0]?.period ?? "").charAt(0).toUpperCase() +
-                  (reportData[0]?.period ?? "").slice(1)
-                } Report (${dayjs(reportData[0]?.start_date).format(
+                  (reportData.period ?? "").charAt(0).toUpperCase() +
+                  (reportData.period ?? "").slice(1)
+                } Report (${dayjs(reportData.start_date).format(
                   "MMM D, YYYY"
-                )} to ${dayjs(reportData[0]?.end_date).format("MMM D, YYYY")})`}
+                )} to ${dayjs(reportData.end_date).format("MMM D, YYYY")})`}
           </h1>
           <div className="grid grid-cols-12 gap-4 md:gap-6">
             <div className="col-span-12 custom-scrollbar">
               <ComponentCard title="Top Customers By Total Transactions Made">
                 <CustomerFequencyTable
-                  data={reportData || null}
+                  data={reportData.customer_breakdown || null}
                   loading={loading}
                 />
               </ComponentCard>
             </div>
-            <div className="col-span-10">
-              <FrequencyPieChart data={reportData || []} />
+            <div className="col-span-7">
+              <FrequencyPieChart data={reportData.customer_breakdown || []} />
             </div>
           </div>
         </div>

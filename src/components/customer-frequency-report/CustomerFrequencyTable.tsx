@@ -7,20 +7,10 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-
-interface CustomerFrequencyData {
-  id: number;
-  first_name: string;
-  last_name: string;
-  contact_number: string;
-  total_transactions: number;
-  total_spent: number;
-  average_spent: number;
-  last_transaction_date: string;
-}
+import { CustomerData } from "@/pages/CustomerFrequencyReport";
 
 interface CustomerFrequencyTableProps {
-  data: CustomerFrequencyData[] | null;
+  data: CustomerData[] | null;
   loading: boolean;
   sortBy?: "total_spent" | "total_transactions" | "average_spent"; // Optional sort parameter
 }
@@ -140,7 +130,8 @@ export default function CustomerFrequencyTable({
                     {formatCurrency(customer.average_spent)}
                   </TableCell>
                   <TableCell className="px-5 py-4 text-gray-800 text-start text-theme-sm dark:text-gray-400">
-                    {formatDate(customer.last_transaction_date)}
+                    {customer.last_transaction_date &&
+                      formatDate(customer.last_transaction_date)}
                   </TableCell>
                 </TableRow>
               ))}
