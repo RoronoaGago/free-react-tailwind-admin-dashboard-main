@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import Button from "../components/ui/button/Button";
 import Label from "@/components/form/Label";
@@ -90,7 +97,6 @@ const ManageTransactions = () => {
   });
   useEffect(() => {
     const fetchTransactions = async () => {
-      
       try {
         const response = await axios.get(
           "http://127.0.0.1:8000/api/transactions/"
@@ -110,56 +116,57 @@ const ManageTransactions = () => {
           transition: Bounce,
         });
       } finally {
-        
       }
     };
 
     fetchTransactions();
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value, type } = e.target;
     const inputElement = e.target as HTMLInputElement; // Type assertion for input-specific properties
-  
+
     // Handle nested customer fields
     if (name.startsWith("customer.")) {
       const fieldName = name.split(".")[1];
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         customer: {
           ...prev.customer,
-          [fieldName]: value
-        }
+          [fieldName]: value,
+        },
       }));
-    } 
+    }
     // Handle decimal number inputs
     else if (type === "number" && inputElement.step === "0.01") {
       // Allow empty string or valid decimal numbers
       if (value === "" || /^[0-9]*\.?[0-9]*$/.test(value)) {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
-          [name]: value // Store as string to preserve decimal places
+          [name]: value, // Store as string to preserve decimal places
         }));
       }
     }
     // Handle Weight fields (existing logic)
     else if (name.includes("Weight")) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: parseFloat(value) || 0
+        [name]: parseFloat(value) || 0,
       }));
     }
     // Default case for other inputs
     else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: value
+        [name]: value,
       }));
     }
   };
 
   const handleServiceTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       serviceType: e.target.value,
     }));
@@ -219,7 +226,10 @@ const ManageTransactions = () => {
 
   const calculateSubtotal = (): number => {
     return (
-      calculateItemTotal(formData.regularClothesWeight, pricing.regularClothes) +
+      calculateItemTotal(
+        formData.regularClothesWeight,
+        pricing.regularClothes
+      ) +
       calculateItemTotal(formData.jeansWeight, pricing.jeans) +
       calculateItemTotal(formData.linensWeight, pricing.linens) +
       calculateItemTotal(formData.comforterWeight, pricing.comforter)
@@ -237,26 +247,28 @@ const ManageTransactions = () => {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-  
+
     try {
-      const response = await axios.post('http://127.0.0.1:8000/api/transactions/', {
-        customer: {
-          first_name: formData.customer.firstName,
-          last_name: formData.customer.lastName,
-          address: formData.customer.address,
-          contact_number: formData.customer.contactNumber,
-        },
-        service_type: formData.serviceType,
-        regular_clothes_weight: formData.regularClothesWeight,
-        jeans_weight: formData.jeansWeight,
-        linens_weight: formData.linensWeight,
-        comforter_weight: formData.comforterWeight,
-        subtotal: calculateSubtotal(),
-        additional_fee: calculateAdditionalFee(),
-        grand_total: calculateGrandTotal(),
-        
-      });
-  setTransactions((prev) => [...prev, response.data]);
+      const response = await axios.post(
+        "http://127.0.0.1:8000/api/transactions/",
+        {
+          customer: {
+            first_name: formData.customer.firstName,
+            last_name: formData.customer.lastName,
+            address: formData.customer.address,
+            contact_number: formData.customer.contactNumber,
+          },
+          service_type: formData.serviceType,
+          regular_clothes_weight: formData.regularClothesWeight,
+          jeans_weight: formData.jeansWeight,
+          linens_weight: formData.linensWeight,
+          comforter_weight: formData.comforterWeight,
+          subtotal: calculateSubtotal(),
+          additional_fee: calculateAdditionalFee(),
+          grand_total: calculateGrandTotal(),
+        }
+      );
+      setTransactions((prev) => [...prev, response.data]);
       toast.success("Transaction created successfully!");
       // Reset form
       setFormData({
@@ -274,7 +286,9 @@ const ManageTransactions = () => {
       });
       setSummaryDialogOpen(false);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Error creating transaction");
+      toast.error(
+        error.response?.data?.message || "Error creating transaction"
+      );
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -366,7 +380,10 @@ const ManageTransactions = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="customer.contactNumber" className="text-base">
+                    <Label
+                      htmlFor="customer.contactNumber"
+                      className="text-base"
+                    >
                       Contact Number *
                     </Label>
                     <Input
@@ -397,9 +414,15 @@ const ManageTransactions = () => {
                       onChange={handleServiceTypeChange}
                       className="w-full px-4 py-2.5 text-sm border-2 border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-transparent"
                     >
-                      <option value="" className="text-gray-400">Select service type</option>
+                      <option value="" className="text-gray-400">
+                        Select service type
+                      </option>
                       {serviceTypes.map((service) => (
-                        <option key={service.value} value={service.value} className="text-gray-400">
+                        <option
+                          key={service.value}
+                          value={service.value}
+                          className="text-gray-400"
+                        >
                           {service.label}
                         </option>
                       ))}
@@ -409,7 +432,10 @@ const ManageTransactions = () => {
                   <div className="grid grid-cols-2 gap-6">
                     {/* Regular Clothes */}
                     <div>
-                      <Label htmlFor="regularClothesWeight" className="text-base whitespace-nowrap">
+                      <Label
+                        htmlFor="regularClothesWeight"
+                        className="text-base whitespace-nowrap"
+                      >
                         Regular Clothes (kg)
                       </Label>
                       <Input
@@ -418,7 +444,11 @@ const ManageTransactions = () => {
                         name="regularClothesWeight"
                         step={0.01}
                         min="0"
-                        value={formData.regularClothesWeight === 0 ? "" : formData.regularClothesWeight}
+                        value={
+                          formData.regularClothesWeight === 0
+                            ? ""
+                            : formData.regularClothesWeight
+                        }
                         onChange={handleInputChange}
                         className="w-full p-3.5 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
                       />
@@ -426,7 +456,10 @@ const ManageTransactions = () => {
 
                     {/* Jeans */}
                     <div className="space-y-2">
-                      <Label htmlFor="jeansWeight" className="text-base whitespace-nowrap">
+                      <Label
+                        htmlFor="jeansWeight"
+                        className="text-base whitespace-nowrap"
+                      >
                         Jeans (kg)
                       </Label>
                       <Input
@@ -435,7 +468,9 @@ const ManageTransactions = () => {
                         name="jeansWeight"
                         step={0.1}
                         min="0"
-                        value={formData.jeansWeight === 0 ? "" : formData.jeansWeight}
+                        value={
+                          formData.jeansWeight === 0 ? "" : formData.jeansWeight
+                        }
                         onChange={handleInputChange}
                         className="w-full p-3.5 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
                       />
@@ -443,7 +478,10 @@ const ManageTransactions = () => {
 
                     {/* Linens/Beddings */}
                     <div className="space-y-2">
-                      <Label htmlFor="linensWeight" className="text-base whitespace-nowrap">
+                      <Label
+                        htmlFor="linensWeight"
+                        className="text-base whitespace-nowrap"
+                      >
                         Linens/Beddings (kg)
                       </Label>
                       <Input
@@ -452,7 +490,11 @@ const ManageTransactions = () => {
                         name="linensWeight"
                         step={0.1}
                         min="0"
-                        value={formData.linensWeight === 0 ? "" : formData.linensWeight}
+                        value={
+                          formData.linensWeight === 0
+                            ? ""
+                            : formData.linensWeight
+                        }
                         onChange={handleInputChange}
                         className="w-full p-3.5 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
                       />
@@ -460,7 +502,10 @@ const ManageTransactions = () => {
 
                     {/* Comforter */}
                     <div className="space-y-2">
-                      <Label htmlFor="comforterWeight" className="text-base whitespace-nowrap">
+                      <Label
+                        htmlFor="comforterWeight"
+                        className="text-base whitespace-nowrap"
+                      >
                         Comforter (kg)
                       </Label>
                       <Input
@@ -469,7 +514,11 @@ const ManageTransactions = () => {
                         name="comforterWeight"
                         step={0.1}
                         min="0"
-                        value={formData.comforterWeight === 0 ? "" : formData.comforterWeight}
+                        value={
+                          formData.comforterWeight === 0
+                            ? ""
+                            : formData.comforterWeight
+                        }
                         onChange={handleInputChange}
                         className="w-full p-3.5 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
                       />
@@ -510,21 +559,37 @@ const ManageTransactions = () => {
                 </h3>
                 <div className="space-y-3">
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-300">Full Name:</p>
-                    <p className="font-medium">{formData.customer.firstName} {formData.customer.lastName}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-300">
+                      Full Name:
+                    </p>
+                    <p className="font-medium">
+                      {formData.customer.firstName} {formData.customer.lastName}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-300">Contact Number:</p>
-                    <p className="font-medium">{formData.customer.contactNumber}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-300">
+                      Contact Number:
+                    </p>
+                    <p className="font-medium">
+                      {formData.customer.contactNumber}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-300">Address:</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-300">
+                      Address:
+                    </p>
                     <p className="font-medium">{formData.customer.address}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-300">Service Type:</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-300">
+                      Service Type:
+                    </p>
                     <p className="font-medium">
-                      {serviceTypes.find(s => s.value === formData.serviceType)?.label}
+                      {
+                        serviceTypes.find(
+                          (s) => s.value === formData.serviceType
+                        )?.label
+                      }
                       {calculateAdditionalFee() > 0 && (
                         <span className="text-blue-600 dark:text-blue-400 ml-2">
                           (+{formatCurrency(calculateAdditionalFee())})
@@ -543,26 +608,56 @@ const ManageTransactions = () => {
                 <div className="space-y-4">
                   {formData.regularClothesWeight > 0 && (
                     <div className="flex justify-between">
-                      <span>Regular Clothes ({formData.regularClothesWeight} kg)</span>
-                      <span>{formatCurrency(calculateItemTotal(formData.regularClothesWeight, pricing.regularClothes))}</span>
+                      <span>
+                        Regular Clothes ({formData.regularClothesWeight} kg)
+                      </span>
+                      <span>
+                        {formatCurrency(
+                          calculateItemTotal(
+                            formData.regularClothesWeight,
+                            pricing.regularClothes
+                          )
+                        )}
+                      </span>
                     </div>
                   )}
                   {formData.jeansWeight > 0 && (
                     <div className="flex justify-between">
                       <span>Jeans ({formData.jeansWeight} kg)</span>
-                      <span>{formatCurrency(calculateItemTotal(formData.jeansWeight, pricing.jeans))}</span>
+                      <span>
+                        {formatCurrency(
+                          calculateItemTotal(
+                            formData.jeansWeight,
+                            pricing.jeans
+                          )
+                        )}
+                      </span>
                     </div>
                   )}
                   {formData.linensWeight > 0 && (
                     <div className="flex justify-between">
                       <span>Linens/Beddings ({formData.linensWeight} kg)</span>
-                      <span>{formatCurrency(calculateItemTotal(formData.linensWeight, pricing.linens))}</span>
+                      <span>
+                        {formatCurrency(
+                          calculateItemTotal(
+                            formData.linensWeight,
+                            pricing.linens
+                          )
+                        )}
+                      </span>
                     </div>
                   )}
                   {formData.comforterWeight > 0 && (
                     <div className="flex justify-between">
                       <span>Comforter ({formData.comforterWeight} kg)</span>
-                      <span>{formatCurrency(calculateItemTotal(formData.comforterWeight, pricing.comforter))}</span>
+                      <span>
+                        {formatCurrency(
+                          calculateItemTotal(
+                            formData.comforterWeight,
+                            pricing.comforter
+                          )
+                        )}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -607,7 +702,9 @@ const ManageTransactions = () => {
                   rows={3}
                   placeholder="Any special instructions..."
                   value={formData.notes || ""}
-                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                  onChange={(e) =>
+                    setFormData({ ...formData, notes: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -651,7 +748,10 @@ const ManageTransactions = () => {
 
       {/* Transactions Table */}
       <div className="mt-8">
-        <TransactionsTable transactions={transactions} setTransactions={setTransactions}/>
+        <TransactionsTable
+          transactions={transactions}
+          setTransactions={setTransactions}
+        />
       </div>
 
       <ToastContainer position="top-center" autoClose={5000} />

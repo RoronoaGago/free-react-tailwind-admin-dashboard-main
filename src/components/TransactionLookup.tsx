@@ -1,26 +1,77 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router";
-import { Loading } from "./common/Loading";
-import { Search } from "lucide-react";
+import { Search, Star } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import { formatCurrency } from "@/lib/helpers";
+import Button from "./ui/button/Button";
+import bubbleMagicFacade from "../../public/images/bubble-magic/bubble-magic-facade.jpg";
+// shadcn/ui modal components
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 
 export default function TransactionLookup() {
   const [transactionId, setTransactionId] = useState("");
   const [transactionData, setTransactionData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
 
   const navigate = useNavigate();
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+
+    if (
+      transactionData &&
+      transactionData.status.toLowerCase() === "completed" &&
+      !hasBeenRated(transactionId)
+    ) {
+      timer = setTimeout(() => {
+        setShowRatingModal(true);
+      }, 5000); // 10 seconds delay
+    }
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [transactionData, transactionId]);
+  // Check if transaction has been rated before
+  const hasBeenRated = (id: string) => {
+    const ratedTransactionsStr = localStorage.getItem("ratedTransactions");
+    const ratedTransactions: string[] = ratedTransactionsStr
+      ? JSON.parse(ratedTransactionsStr)
+      : [];
+    return ratedTransactions.includes(id);
+  };
+
+  // Mark transaction as rated
+  const markAsRated = (id: string) => {
+    const ratedTransactionsStr = localStorage.getItem("ratedTransactions");
+    const ratedTransactions: string[] = ratedTransactionsStr
+      ? JSON.parse(ratedTransactionsStr)
+      : [];
+
+    if (!ratedTransactions.includes(id)) {
+      ratedTransactions.push(id);
+      localStorage.setItem(
+        "ratedTransactions",
+        JSON.stringify(ratedTransactions)
+      );
+    }
+  };
 
   const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault();
-    e.stopPropagation(); // Add this to be extra sure
+    e.stopPropagation();
 
     setLoading(true);
-    console.log("looknig for transaction");
-    toast.success("yippie");
-    console.log("Form submission prevented?", e.defaultPrevented); // Should log true
     const toastId = toast.loading("Looking up your transaction...", {
       position: "top-center",
       autoClose: false,
@@ -67,7 +118,6 @@ export default function TransactionLookup() {
       let errorMessage = "An unexpected error occurred";
       let isNotFound = false;
 
-      // Type guard for AxiosError
       if (axios.isAxiosError(err)) {
         isNotFound = err.response?.status === 404;
         errorMessage = isNotFound
@@ -94,11 +144,49 @@ export default function TransactionLookup() {
     }
   };
 
-  if (loading) return <Loading />;
+  const handleRatingSubmit = async () => {
+    try {
+      await axios.post(
+        `http://127.0.0.1:8000/api/transactions/${transactionId}/rate/`,
+        {
+          rating: rating,
+        }
+      );
+
+      markAsRated(transactionId); // Store in localStorage
+      toast.success("Thank you for your feedback!");
+      setShowRatingModal(false);
+      setRating(0);
+    } catch (error) {
+      toast.error("Failed to submit rating. Please try again.");
+    }
+  };
+
+  const StarRating = () => (
+    <div className="flex justify-center my-4">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          className="mx-1 focus:outline-none"
+          onClick={() => setRating(star)}
+          onMouseEnter={() => setHoverRating(star)}
+          onMouseLeave={() => setHoverRating(0)}
+        >
+          <Star
+            className={`w-8 h-8 ${
+              (hoverRating || rating) >= star
+                ? "text-yellow-400 fill-yellow-400"
+                : "text-gray-300"
+            }`}
+          />
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div className="flex flex-col lg:flex-row w-full min-h-screen">
-      {/* Left Side - Lookup Form */}
       <div className="flex items-center justify-center w-full lg:w-1/2 p-4 sm:p-8">
         <div className="w-full max-w-md mx-auto">
           {/* Logo Container */}
@@ -145,13 +233,13 @@ export default function TransactionLookup() {
               </div>
             </div>
 
-            <button
+            <Button
               className="w-full px-4 py-3 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 dark:bg-brand-500 dark:hover:bg-brand-600 transition-colors duration-300"
               type="submit"
               disabled={loading}
             >
               {loading ? "Searching..." : "Find My Order"}
-            </button>
+            </Button>
           </form>
 
           {/* Transaction Details Display */}
@@ -245,14 +333,56 @@ export default function TransactionLookup() {
       </div>
 
       {/* Right Side - Image */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gray-200 dark:bg-gray-800">
+      <div className="hidden lg:flex lg:w-1/2 bg-gray-200 dark:bg-gray-800 relative">
         <img
-          src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
+          src={bubbleMagicFacade}
           alt="Laundry service"
           className="object-cover w-full h-full"
         />
+        <div className="absolute inset-0 bg-black opacity-20 dark:opacity-40" />
       </div>
-      <ToastContainer />
+
+      {/* shadcn/ui Rating Modal */}
+      <Dialog open={showRatingModal} onOpenChange={setShowRatingModal}>
+        <DialogContent className="dark:bg-gray-900 max-w-[400px] text-center">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-center">
+              How was your experience?
+            </DialogTitle>
+          </DialogHeader>
+          <DialogDescription className="text-gray-600 dark:text-gray-400 text-center px-4">
+            Please rate your laundry service experience
+          </DialogDescription>
+          <div className="flex justify-center py-4">
+            <StarRating />
+          </div>
+          <DialogFooter className="sm:justify-center">
+            <div className="flex gap-4 justify-center">
+              <Button
+                variant="outline"
+                onClick={() => setShowRatingModal(false)}
+              >
+                Maybe Later
+              </Button>
+              <Button onClick={handleRatingSubmit} disabled={rating === 0}>
+                Submit Rating
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ToastContainer
+        position="top-center"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   );
 }

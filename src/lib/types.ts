@@ -7,25 +7,26 @@ export type User = {
     phone_number: string;
 
 }
-
+export type TransactionFormData = {
+    customer: {
+        firstName: string;
+        lastName: string;
+        address: string;
+        contactNumber: string;
+    };
+    serviceType: string;
+    regularClothesWeight: number;
+    jeansWeight: number;
+    linensWeight: number;
+    comforterWeight: number;
+    notes?: string;
+};
 export type ComponentCardProps = {
     title: string;
     children: React.ReactNode;
     placeholder?: string;
     className?: string; // Additional custom classes for styling
     desc?: string; // Description text
-}
-// Define the type for the form data
-export type TransactionFormData = {
-    firstName: string;
-    lastName: string;
-    address: string;
-    contactNumber: string;
-    regularClothesWeight: number;
-    jeansWeight: number;
-    linensWeight: number;
-    comforterWeight: number;
-    serviceType: string;
 }
 
 export type UserFormData = {
