@@ -13,7 +13,6 @@ import Button from "../components/ui/button/Button";
 import { CalenderIcon, EyeCloseIcon, PlusIcon } from "../icons";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
-import { cn } from "@/lib/utils";
 import { EyeIcon, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { UserFormData } from "@/lib/types";
@@ -36,7 +35,7 @@ const ManageUsers = () => {
 
   //  fields
   const Fields = ["first_name", "last_name", "username", "password", "email"];
-  
+
   // Check if all  fields are filled
   const isFormValid = Fields.every(
     (field) => formData[field as keyof UserFormData]?.trim() !== ""
@@ -78,7 +77,7 @@ const ManageUsers = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     if (!isFormValid) {
       toast.error("Please fill in all  fields!", {
         position: "top-center",
@@ -108,7 +107,7 @@ const ManageUsers = () => {
         phone_number: formData.phone_number,
       });
 
-      setUsers(prevUsers => [...prevUsers, response.data]);
+      setUsers((prevUsers) => [...prevUsers, response.data]);
 
       toast.success("User Added Successfully!", {
         position: "top-center",
@@ -133,7 +132,6 @@ const ManageUsers = () => {
         phone_number: "",
       });
       setIsDialogOpen(false);
-
     } catch (error) {
       let errorMessage = "Failed to add user. Please try again.";
 
@@ -200,7 +198,6 @@ const ManageUsers = () => {
                       placeholder="John"
                       value={formData.first_name}
                       onChange={handleChange}
-                      
                     />
                   </div>
                   <div className="space-y-2">
@@ -212,7 +209,6 @@ const ManageUsers = () => {
                       placeholder="Doe"
                       value={formData.last_name}
                       onChange={handleChange}
-                      
                     />
                   </div>
                 </div>
@@ -226,7 +222,6 @@ const ManageUsers = () => {
                     placeholder="johndoe123"
                     value={formData.username}
                     onChange={handleChange}
-                    
                   />
                 </div>
 
@@ -239,7 +234,6 @@ const ManageUsers = () => {
                     placeholder="john@example.com"
                     value={formData.email}
                     onChange={handleChange}
-                    
                   />
                 </div>
 
@@ -253,7 +247,6 @@ const ManageUsers = () => {
                       placeholder="••••••••"
                       value={formData.password}
                       onChange={handleChange}
-                      
                     />
                     <button
                       type="button"

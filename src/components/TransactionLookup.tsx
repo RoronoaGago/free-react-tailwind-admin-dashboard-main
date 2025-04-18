@@ -5,7 +5,7 @@ import { Search, Star } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import { formatCurrency } from "@/lib/helpers";
 import Button from "./ui/button/Button";
-import bubbleMagicFacade from "../../public/images/bubble-magic/bubble-magic-facade.jpg";
+import bubbleMagicFacade from "../images/bubble-magic/bubble-magic-facade.jpg";
 // shadcn/ui modal components
 import {
   Dialog,

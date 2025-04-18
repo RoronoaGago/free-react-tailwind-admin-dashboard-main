@@ -11,12 +11,6 @@ export const serviceTypeOptions = [
 
 ];
 
-export const countries = [
-  { code: "US", label: "+1" },
-  { code: "GB", label: "+44" },
-  { code: "CA", label: "+1" },
-  { code: "AU", label: "+61" },
-];
 
 export const pricing = {
   regularClothes: 35,

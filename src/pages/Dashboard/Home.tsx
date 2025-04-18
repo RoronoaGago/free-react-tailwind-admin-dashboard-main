@@ -1,9 +1,7 @@
-import RecentOrders from "../../components/ecommerce/RecentOrders";
 import GeneralMetrics from "@/components/dashboard/GeneralMetrics";
-import CustomerFrequencyStatisticsForTheMonth from "@/components/dashboard/CustomerFrequencyStatisticsForTheLast30days";
 import { useEffect, useState } from "react";
-import TransactionStatistics from "@/components/sales-report/TransactionStatistics";
 import DashboardTransactionStatistics from "./DashboardTransactionStatistics";
+import RecentTransactions from "@/components/ecommerce/RecentTransactions";
 
 type Customer = {
   id: number;
@@ -97,7 +95,7 @@ export default function Home() {
         </div>
 
         <div className="col-span-12 xl:col-span-8">
-          <RecentOrders
+          <RecentTransactions
             transactionData={metrics?.recent_transactions || []}
             loading={loading}
           />

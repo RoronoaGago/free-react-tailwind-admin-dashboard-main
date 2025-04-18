@@ -15,6 +15,7 @@ import TransactionsTable from "@/components/tables/BasicTables/TransactionAndSal
 import { Bounce, toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
+import { formatCurrency } from "@/lib/helpers";
 
 // Service types and pricing
 const serviceTypes = [
@@ -27,15 +28,6 @@ const pricing = {
   jeans: 45,
   linens: 50,
   comforter: 40,
-};
-
-// Format currency function
-const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    minimumFractionDigits: 2,
-  }).format(value);
 };
 
 type TransactionFormData = {
