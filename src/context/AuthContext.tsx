@@ -60,30 +60,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (username: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await authLogin(username, password);
+      const authData = await authLogin(username, password);
 
-      // Make sure to check the actual response structure
-      if (!response?.access) {
-        throw new Error("Invalid credentials");
+      if (!authData?.access) {
+        throw new Error("Authentication failed");
       }
 
-      const token = response.access;
+      const token = authData.access;
+      localStorage.setItem("access_token", token);
       const userData = decodeToken(token);
 
       setUser(userData);
       setIsAuthenticated(true);
     } catch (error) {
-      // Clear any existing token on error
       localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
       setIsAuthenticated(false);
       setUser(null);
 
-      // Re-throw with a user-friendly message
-      throw new Error(
-        error instanceof Error
-          ? error.message
-          : "Login failed. Please try again."
-      );
+      // Pass through the error message from auth.ts
+      throw error;
     } finally {
       setIsLoading(false);
     }
