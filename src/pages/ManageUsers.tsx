@@ -177,9 +177,9 @@ const ManageUsers = () => {
                 Add New User
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md dark:bg-gray-900">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-semibold">
+            <DialogContent className="w-full rounded-lg bg-white dark:bg-gray-800 p-8 shadow-xl">
+              <DialogHeader className="mb-8">
+                <DialogTitle className="text-3xl font-bold text-gray-800 dark:text-white">
                   Add New User
                 </DialogTitle>
                 <DialogDescription className="text-gray-600 dark:text-gray-400">
@@ -190,22 +190,28 @@ const ManageUsers = () => {
               <form className="space-y-4" onSubmit={handleSubmit}>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="first_name">First Name *</Label>
+                    <Label htmlFor="first_name" className="text-base">
+                      First Name *
+                    </Label>
                     <Input
                       type="text"
                       id="first_name"
                       name="first_name"
+                      className="w-full p-3.5 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
                       placeholder="John"
                       value={formData.first_name}
                       onChange={handleChange}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="last_name">Last Name *</Label>
+                    <Label htmlFor="last_name" className="text-base">
+                      Last Name *
+                    </Label>
                     <Input
                       type="text"
                       id="last_name"
                       name="last_name"
+                      className="w-full p-3.5 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
                       placeholder="Doe"
                       value={formData.last_name}
                       onChange={handleChange}
@@ -214,7 +220,9 @@ const ManageUsers = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username *</Label>
+                  <Label htmlFor="username" className="text-base">
+                    Username *
+                  </Label>
                   <Input
                     type="text"
                     id="username"
@@ -226,11 +234,14 @@ const ManageUsers = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
+                  <Label htmlFor="email" className="text-base">
+                    Email *
+                  </Label>
                   <Input
                     type="email"
                     id="email"
                     name="email"
+                    className="w-full p-3.5 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
                     placeholder="john@example.com"
                     value={formData.email}
                     onChange={handleChange}
@@ -238,12 +249,15 @@ const ManageUsers = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password *</Label>
+                  <Label htmlFor="password" className="text-base">
+                    Password *
+                  </Label>
                   <div className="relative">
                     <Input
                       type={showPassword ? "text" : "password"}
                       id="password"
                       name="password"
+                      className="w-full p-3.5 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
                       placeholder="••••••••"
                       value={formData.password}
                       onChange={handleChange}
@@ -266,13 +280,15 @@ const ManageUsers = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="date_of_birth">Birthdate</Label>
+                  <Label htmlFor="date_of_birth" className="text-base">
+                    Birthdate
+                  </Label>
                   <div className="relative">
                     <Input
                       type="date"
                       id="date_of_birth"
                       name="date_of_birth"
-                      className="[&::-webkit-calendar-picker-indicator]:opacity-0"
+                      className="[&::-webkit-calendar-picker-indicator]:opacity-0 w-full p-3.5 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
                       value={formData.date_of_birth}
                       onChange={handleChange}
                       max={new Date().toISOString().split("T")[0]}
@@ -284,11 +300,14 @@ const ManageUsers = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone_number">Phone Number</Label>
+                  <Label htmlFor="phone_number" className="text-base">
+                    Phone Number
+                  </Label>
                   <Input
                     type="tel"
                     id="phone_number"
                     name="phone_number"
+                    className="w-full p-3.5 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
                     placeholder="+1 (555) 123-4567"
                     value={formData.phone_number}
                     onChange={handleChange}

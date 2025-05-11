@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 import { Search, Star } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import { formatCurrency } from "@/lib/helpers";
 import Button from "./ui/button/Button";
 import bubbleMagicFacade from "../images/bubble-magic/bubble-magic-facade.jpg";
+import bubbleMagicLogo from "../../public/images/logo/bubble-magic-logo.svg";
 // shadcn/ui modal components
 import {
   Dialog,
@@ -17,7 +18,9 @@ import {
 } from "./ui/dialog";
 
 export default function TransactionLookup() {
-  const [transactionId, setTransactionId] = useState("");
+  const { transactionId: urlTransactionId } = useParams(); // Get ID from URL
+  const [transactionId, setTransactionId] = useState(urlTransactionId || ""); // Initialize with URL ID
+
   const [transactionData, setTransactionData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
@@ -42,6 +45,14 @@ export default function TransactionLookup() {
       if (timer) clearTimeout(timer);
     };
   }, [transactionData, transactionId]);
+  // Automatically search if URL contains an ID
+  // Handle the case where urlTransactionId is undefined
+  useEffect(() => {
+    if (urlTransactionId !== undefined) {
+      // Explicit check for undefined
+      handleLookup(new Event("submit") as unknown as React.FormEvent);
+    }
+  }, [urlTransactionId]);
   // Check if transaction has been rated before
   const hasBeenRated = (id: string) => {
     const ratedTransactionsStr = localStorage.getItem("ratedTransactions");
@@ -69,9 +80,10 @@ export default function TransactionLookup() {
 
   const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault();
-    e.stopPropagation();
 
     setLoading(true);
+    // Update URL query parameter
+    navigate(`/transaction-lookup/${transactionId}`, { replace: true });
     const toastId = toast.loading("Looking up your transaction...", {
       position: "top-center",
       autoClose: false,
@@ -85,7 +97,7 @@ export default function TransactionLookup() {
 
     try {
       const response = await axios.get(
-        `http://127.0.0.1:8000/api/customer/transactions/${transactionId}/`
+        `http://192.168.1.147:8000/api/customer/transactions/${transactionId}/`
       );
 
       if (!response.data) {
@@ -146,8 +158,12 @@ export default function TransactionLookup() {
 
   const handleRatingSubmit = async () => {
     try {
+      console.log(rating);
+      console.log(transactionId);
       await axios.post(
-        `http://127.0.0.1:8000/api/transactions/${transactionId}/rate/`,
+        `http://192.168.1.147:8000/api/transactions/${parseInt(
+          transactionId
+        )}/rate/`,
         {
           rating: rating,
         }
@@ -193,7 +209,7 @@ export default function TransactionLookup() {
           <div className="flex justify-center mb-6">
             <div className="w-20 h-20 p-1 bg-white rounded-full shadow-lg dark:bg-gray-800">
               <img
-                src="./images/logo/bubble-magic-logo.svg"
+                src={bubbleMagicLogo}
                 alt="Company Logo"
                 className="w-full h-full object-contain"
               />

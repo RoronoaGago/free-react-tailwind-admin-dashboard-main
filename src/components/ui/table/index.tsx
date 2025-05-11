@@ -20,6 +20,7 @@ interface TableBodyProps {
 
 // Props for TableRow
 interface TableRowProps {
+  onClick?: () => void; // Changed from 'onclick' to 'onClick'
   children: ReactNode; // Cells (th or td)
   className?: string; // Optional className for styling
   colSpan?: number; // Optional colspan for the row
@@ -31,8 +32,6 @@ interface TableCellProps {
   isHeader?: boolean; // If true, renders as <th>, otherwise <td>
   className?: string; // Optional className for styling
   colSpan?: number; // Optional colspan for the cell
-  
-  
 }
 
 // Table Component
@@ -51,20 +50,33 @@ const TableBody: React.FC<TableBodyProps> = ({ children, className }) => {
 };
 
 // TableRow Component
-const TableRow: React.FC<TableRowProps> = ({ children, className, colSpan }) => {
-  return <tr className={className}>{children}</tr>;
+const TableRow: React.FC<TableRowProps> = ({
+  children,
+  className,
+  onClick,
+  colSpan,
+}) => {
+  return (
+    <tr className={className} onClick={onClick}>
+      {children}
+    </tr>
+  );
 };
 
 // TableCell Component
 const TableCell: React.FC<TableCellProps> = ({
   children,
-  
+
   isHeader = false,
   className,
-  colSpan
+  colSpan,
 }) => {
   const CellTag = isHeader ? "th" : "td";
-  return <CellTag className={` ${className}`} colSpan={colSpan}>{children}</CellTag>;
+  return (
+    <CellTag className={` ${className}`} colSpan={colSpan}>
+      {children}
+    </CellTag>
+  );
 };
 
 export { Table, TableHeader, TableBody, TableRow, TableCell };

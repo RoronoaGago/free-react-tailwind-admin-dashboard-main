@@ -9,11 +9,12 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
   const [credentials, setCredentials] = useState({
     username: "",
     password: "",
   });
-  const { login, error, loading } = useAuth();
+  const { login, isLoading } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
@@ -24,28 +25,34 @@ export default function SignInForm() {
     }));
   }, []);
 
-  const handleSubmit = useCallback(
-    async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    // Basic validation
+    if (!credentials.username || !credentials.password) {
+      setError("Please enter both username and password");
+      return;
+    }
+
+    try {
+      await login(credentials.username, credentials.password);
+      navigate("/");
+    } catch (err) {
+      console.error("Login error:", err);
+      setError(
+        err instanceof Error ? err.message : "Invalid username or password"
+      );
+      // Explicitly prevent default in case of error
       e.preventDefault();
+    }
+  };
 
-      if (!credentials.username || !credentials.password) {
-        return;
-      }
-
-      try {
-        await login(credentials); // No success check needed
-        // Navigation is handled inside AuthContext's login
-      } catch (err) {
-        // Errors are already handled by AuthContext
-      }
-    },
-    [credentials, login] // Remove navigate from dependencies
-  );
   const togglePasswordVisibility = useCallback(() => {
     setShowPassword((prev) => !prev);
   }, []);
 
-  if (loading) return <Loading />;
+  // if (isLoading) return <Loading />;
 
   return (
     <div className="flex flex-col lg:flex-row w-full h-full">
@@ -82,7 +89,14 @@ export default function SignInForm() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSubmit(e);
+            }}
+            className="space-y-6"
+            noValidate
+          >
             <div>
               <Label
                 htmlFor="username"
@@ -135,7 +149,7 @@ export default function SignInForm() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            {/* <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
                   id="remember-me"
@@ -157,21 +171,21 @@ export default function SignInForm() {
               >
                 Forgot password?
               </a>
-            </div>
+            </div> */}
 
             <button
               className="w-full px-4 py-3 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 dark:bg-brand-500 dark:hover:bg-brand-600 transition-colors duration-300 disabled:opacity-75"
               type="submit"
               disabled={
-                loading || !credentials.username || !credentials.password
+                isLoading || !credentials.username || !credentials.password
               }
-              aria-busy={loading}
+              aria-busy={isLoading}
             >
-              {loading ? "Signing in..." : "Sign in"}
+              {isLoading ? "Signing in..." : "Sign in"}
             </button>
           </form>
 
-          <div className="mt-8 text-center">
+          {/* <div className="mt-8 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Don't have an account?{" "}
               <a
@@ -181,7 +195,7 @@ export default function SignInForm() {
                 Sign up
               </a>
             </p>
-          </div>
+          </div> */}
         </div>
       </div>
 

@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import QRCode from "react-qr-code";
+
 import {
   Dialog,
   DialogContent,
@@ -73,6 +75,12 @@ interface Transaction {
 const ManageTransactions = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isSummaryDialogOpen, setSummaryDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  // Add this state variable
+  const [showQRCode, setShowQRCode] = useState(false);
+  const [latestTransactionId, setLatestTransactionId] = useState<number | null>(
+    null
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<TransactionFormData>({
     customer: {
@@ -97,7 +105,6 @@ const ManageTransactions = () => {
       } catch (err) {
         toast.error("Failed to fetch transactions", {
           position: "top-center",
-          autoClose: 5000,
           style: { fontFamily: "Outfit, sans-serif" },
           hideProgressBar: false,
           closeOnClick: false,
@@ -276,7 +283,10 @@ const ManageTransactions = () => {
         linensWeight: 0,
         comforterWeight: 0,
       });
+      setLatestTransactionId(response.data.id); // Store the new transaction ID
       setSummaryDialogOpen(false);
+      setIsAddDialogOpen(false);
+      setShowQRCode(true); // Show QR code dialog
     } catch (error: any) {
       toast.error(
         error.response?.data?.message || "Error creating transaction"
@@ -305,11 +315,13 @@ const ManageTransactions = () => {
   return (
     <div className="container mx-auto px-4 py-6">
       <PageBreadcrumb pageTitle="Manage Transactions" />
-
       <div className="flex justify-end mb-6">
-        <Dialog>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow">
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow"
+              onClick={() => setIsAddDialogOpen(true)}
+            >
               Add New Transaction
             </Button>
           </DialogTrigger>
@@ -532,7 +544,6 @@ const ManageTransactions = () => {
           </DialogContent>
         </Dialog>
       </div>
-
       {/* Summary Dialog */}
       <Dialog open={isSummaryDialogOpen} onOpenChange={setSummaryDialogOpen}>
         <DialogContent className="w-full min-w-4xl rounded-lg bg-white dark:bg-gray-800 p-6 shadow-xl">
@@ -738,6 +749,42 @@ const ManageTransactions = () => {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
+        <DialogContent className="w-full max-w-md rounded-lg bg-white dark:bg-gray-800 p-6 shadow-xl">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-2xl font-bold text-gray-800 dark:text-white">
+              Transaction Receipt
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex flex-col items-center space-y-4">
+            <p className="text-gray-600 dark:text-gray-300 text-center">
+              Scan this QR code to view your transaction details
+            </p>
+
+            <div className="p-4 bg-white rounded-lg border border-gray-200">
+              <QRCode
+                value={`http://192.168.1.147:5173/transaction-lookup/${latestTransactionId}`}
+                size={200}
+                level="H"
+              />
+            </div>
+
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+              Transaction ID: {latestTransactionId}
+            </p>
+          </div>
+
+          <DialogFooter className="mt-6">
+            <Button
+              onClick={() => setShowQRCode(false)}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg shadow"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* Transactions Table */}
       <div className="mt-8">
         <TransactionsTable
@@ -745,7 +792,6 @@ const ManageTransactions = () => {
           setTransactions={setTransactions}
         />
       </div>
-
       <ToastContainer position="top-center" autoClose={5000} />
     </div>
   );

@@ -17,7 +17,6 @@ import {
 import { useSidebar } from "../context/SidebarContext";
 import { NavItem } from "@/lib/types";
 
-
 const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
@@ -56,11 +55,11 @@ const navItems: NavItem[] = [
   //   name: "Calendar",
   //   path: "/calendar",
   // },
-  // {
-  //   icon: <UserCircleIcon />,
-  //   name: "User Profile",
-  //   path: "/profile",
-  // },
+  {
+    icon: <UserCircleIcon />,
+    name: "User Profile",
+    path: "/profile",
+  },
   // {
   //   name: "Forms",
   //   icon: <ListIcon />,

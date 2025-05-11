@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Bounce, ToastContainer, toast } from "react-toastify";
@@ -38,7 +39,13 @@ import Badge from "@/components/ui/badge/Badge";
 type SortDirection = "asc" | "desc" | null;
 type SortableField = keyof Pick<
   User,
-  "id" | "first_name" | "last_name" | "username" | "email" | "phone_number"
+  | "id"
+  | "first_name"
+  | "last_name"
+  | "username"
+  | "email"
+  | "phone_number"
+  | "password"
 >;
 interface UsersTableProps {
   users: User[];
@@ -62,8 +69,11 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
   // Form state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [userToView, setUserToView] = useState<User | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Fetch users
   useEffect(() => {
@@ -146,6 +156,12 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
   const handleDeleteClick = (user: User) => {
     setUserToDelete(user);
     setIsDeleteDialogOpen(true);
+  };
+
+  // Handle view user
+  const handleViewUser = (user: User) => {
+    setUserToView(user);
+    setIsViewDialogOpen(true);
   };
 
   // Handle form submission
@@ -370,7 +386,11 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
               {currentItems.length > 0 ? (
                 currentItems.map((user) => (
-                  <TableRow key={user.id}>
+                  <TableRow
+                    key={user.id}
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                    onClick={() => handleViewUser(user)}
+                  >
                     <TableCell className="px-5 py-4 sm:px-6 text-start">
                       <div className="flex items-center gap-3">
                         <span className="block font-medium text-gray-800 text-theme-sm dark:text-gray-400">
@@ -396,13 +416,19 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
                     </TableCell>
                     <TableCell className="px-5 py-4 text-gray-800 text-start text-theme-sm dark:text-gray-400 space-x-2">
                       <button
-                        onClick={() => handleEditUser(user)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditUser(user);
+                        }}
                         className="px-4 py-2 bg-blue-light-500 text-white dark:text-white rounded-md hover:bg-blue-light-600 transition-colors"
                       >
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDeleteClick(user)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(user);
+                        }}
                         className="px-4 py-2 bg-error-500 text-white dark:text-white rounded-md hover:bg-error-600 transition-colors"
                       >
                         Delete
@@ -500,18 +526,23 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
 
       {/* Edit User Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md dark:bg-gray-900">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">
+        <DialogContent className="w-full rounded-lg bg-white dark:bg-gray-800 p-8 shadow-xl">
+          <DialogHeader className="mb-8">
+            <DialogTitle className="text-3xl font-bold text-gray-800 dark:text-white">
               Edit User
             </DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-gray-400">
+              Update the user details below
+            </DialogDescription>
           </DialogHeader>
 
           {selectedUser && (
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
+                  <Label htmlFor="firstName" className="text-base">
+                    First Name
+                  </Label>
                   <Input
                     type="text"
                     id="firstName"
@@ -526,7 +557,9 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
+                  <Label htmlFor="lastName" className="text-base">
+                    Last Name
+                  </Label>
                   <Input
                     type="text"
                     id="lastName"
@@ -559,7 +592,9 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-base">
+                  Email
+                </Label>
                 <Input
                   type="email"
                   id="email"
@@ -575,7 +610,9 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone" className="text-base">
+                  Phone Number
+                </Label>
                 <Input
                   type="tel"
                   id="phone"
@@ -588,6 +625,37 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
                     })
                   }
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-base">
+                  Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    name="password"
+                    value={selectedUser.password || ""}
+                    onChange={(e) =>
+                      setSelectedUser({
+                        ...selectedUser,
+                        password: e.target.value,
+                      })
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeCloseIcon className="h-5 w-5 text-gray-400" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5 text-gray-400" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
@@ -610,18 +678,82 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
         </DialogContent>
       </Dialog>
 
+      {/* View User Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="w-full rounded-lg bg-white dark:bg-gray-800 p-8 shadow-xl">
+          <DialogHeader className="mb-8">
+            <DialogTitle className="text-3xl font-bold text-gray-800 dark:text-white">
+              User Details
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-gray-400">
+              Detailed information about the user
+            </DialogDescription>
+          </DialogHeader>
+
+          {userToView && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">First Name</Label>
+                  <p className="text-gray-800 dark:text-gray-200">
+                    {userToView.first_name}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">Last Name</Label>
+                  <p className="text-gray-800 dark:text-gray-200">
+                    {userToView.last_name}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-base font-medium">Username</Label>
+                <p className="text-gray-800 dark:text-gray-200">
+                  {userToView.username}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-base font-medium">Email</Label>
+                <p className="text-gray-800 dark:text-gray-200">
+                  {userToView.email}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-base font-medium">Phone Number</Label>
+                <p className="text-gray-800 dark:text-gray-200">
+                  {userToView.phone_number || "Not provided"}
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsViewDialogOpen(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="max-w-md dark:bg-gray-900">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">
+        <DialogContent className="w-full rounded-lg bg-white dark:bg-gray-800 p-8 shadow-xl">
+          <DialogHeader className="mb-8">
+            <DialogTitle className="text-3xl font-bold text-gray-800 dark:text-white">
               Delete User
             </DialogTitle>
           </DialogHeader>
 
           {userToDelete && (
             <div className="space-y-4">
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-400 dark:text-white/90">
                 Are you sure you want to delete user{" "}
                 <strong>
                   {userToDelete.first_name} {userToDelete.last_name}
