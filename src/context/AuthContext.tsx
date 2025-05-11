@@ -68,7 +68,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       const token = response.access;
-      localStorage.setItem("access_token", token); // Store token
       const userData = decodeToken(token);
 
       setUser(userData);
@@ -91,7 +90,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem("access_token"); // Clear token
     authLogout();
     setIsAuthenticated(false);
     setUser(null);
