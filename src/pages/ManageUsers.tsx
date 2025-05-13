@@ -14,32 +14,45 @@ import { CalenderIcon, EyeCloseIcon, PlusIcon } from "../icons";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 import { EyeIcon, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { UserFormData } from "@/lib/types";
 import axios from "axios";
+import { useAuth } from "@/context/AuthContext";
 
 const ManageUsers = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<UserFormData>({
     first_name: "",
     last_name: "",
     username: "",
     password: "",
+    confirm_password: "",
     date_of_birth: "",
     email: "",
     phone_number: "",
   });
 
-  //  fields
-  const Fields = ["first_name", "last_name", "username", "password", "email"];
+  // Required fields
+  const requiredFields = [
+    "first_name",
+    "last_name",
+    "username",
+    "password",
+    "confirm_password",
+    "email",
+  ];
 
-  // Check if all  fields are filled
-  const isFormValid = Fields.every(
-    (field) => formData[field as keyof UserFormData]?.trim() !== ""
-  );
+  // Check if all required fields are filled
+  const isFormValid =
+    requiredFields.every(
+      (field) => formData[field as keyof UserFormData]?.trim() !== ""
+    ) && Object.keys(errors).length === 0;
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -49,7 +62,7 @@ const ManageUsers = () => {
       } catch (error) {
         toast.error("Failed to fetch users", {
           position: "top-center",
-          autoClose: 5000,
+          autoClose: 2000,
           style: { fontFamily: "Outfit, sans-serif" },
           hideProgressBar: false,
           closeOnClick: false,
@@ -65,23 +78,120 @@ const ManageUsers = () => {
     fetchUsers();
   }, []);
 
+  const validateEmail = (email: string) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
+
+  const validatePassword = (password: string) => {
+    // At least 8 characters
+    const re = /^.{8,}$/;
+    return re.test(password);
+  };
+
+  const validatePhoneNumber = (phone: string) => {
+    // Basic phone number validation (allows +, numbers, and spaces)
+    const re = /^[+\d][\d\s]*$/;
+    return re.test(phone);
+  };
+
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+
+    // Update form data immediately (for better UX)
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
     }));
+
+    // Clear previous timeout (if any)
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+    }
+
+    // Set a new timeout for validation (e.g., 500ms delay)
+    debounceTimeout.current = setTimeout(() => {
+      const newErrors = { ...errors };
+
+      // Validate based on field type (same as your original logic)
+      switch (name) {
+        case "email":
+          if (!validateEmail(value)) {
+            newErrors.email = "Please enter a valid email address";
+          } else {
+            delete newErrors.email;
+          }
+          break;
+        case "password":
+          if (!validatePassword(value)) {
+            newErrors.password =
+              "Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 number";
+          } else {
+            delete newErrors.password;
+            // Validate confirm password if it's already filled
+            if (
+              formData.confirm_password &&
+              value !== formData.confirm_password
+            ) {
+              newErrors.confirm_password = "Passwords do not match";
+            } else {
+              delete newErrors.confirm_password;
+            }
+          }
+          break;
+        case "confirm_password":
+          if (value !== formData.password) {
+            newErrors.confirm_password = "Passwords do not match";
+          } else {
+            delete newErrors.confirm_password;
+          }
+          break;
+        case "phone_number":
+          if (value && !validatePhoneNumber(value)) {
+            newErrors.phone_number = "Please enter a valid phone number";
+          } else {
+            delete newErrors.phone_number;
+          }
+          break;
+        default:
+          // For required fields
+          if (requiredFields.includes(name) && !value.trim()) {
+            newErrors[name] = "This field is required";
+          } else {
+            delete newErrors[name];
+          }
+      }
+
+      setErrors(newErrors);
+    }, 1000); // Adjust delay as needed (e.g., 300ms, 500ms, etc.)
+  };
+
+  // Cleanup timeout on unmount (optional but recommended)
+  useEffect(() => {
+    return () => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+    };
+  }, []);
+
+  const handlePhoneNumberInput = (e: React.FormEvent<HTMLInputElement>) => {
+    const input = e.target as HTMLInputElement;
+    // Remove any non-digit and non-plus characters
+    input.value = input.value.replace(/[^0-9+]/g, "");
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!isFormValid) {
-      toast.error("Please fill in all  fields!", {
+      toast.error("Please fill in all required fields correctly!", {
         position: "top-center",
-        autoClose: 5000,
+        autoClose: 2000,
         style: { fontFamily: "Outfit, sans-serif" },
         hideProgressBar: false,
         closeOnClick: false,
@@ -111,7 +221,7 @@ const ManageUsers = () => {
 
       toast.success("User Added Successfully!", {
         position: "top-center",
-        autoClose: 5000,
+        autoClose: 2000,
         style: { fontFamily: "Outfit, sans-serif" },
         hideProgressBar: false,
         closeOnClick: false,
@@ -127,10 +237,12 @@ const ManageUsers = () => {
         last_name: "",
         username: "",
         password: "",
+        confirm_password: "",
         date_of_birth: "",
         email: "",
         phone_number: "",
       });
+      setErrors({});
       setIsDialogOpen(false);
     } catch (error) {
       let errorMessage = "Failed to add user. Please try again.";
@@ -147,7 +259,7 @@ const ManageUsers = () => {
 
       toast.error(errorMessage, {
         position: "top-center",
-        autoClose: 5000,
+        autoClose: 2000,
         style: { fontFamily: "Outfit, sans-serif" },
         hideProgressBar: false,
         closeOnClick: false,
@@ -202,6 +314,11 @@ const ManageUsers = () => {
                       value={formData.first_name}
                       onChange={handleChange}
                     />
+                    {errors.first_name && (
+                      <p className="text-red-500 text-sm">
+                        {errors.first_name}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="last_name" className="text-base">
@@ -216,6 +333,9 @@ const ManageUsers = () => {
                       value={formData.last_name}
                       onChange={handleChange}
                     />
+                    {errors.last_name && (
+                      <p className="text-red-500 text-sm">{errors.last_name}</p>
+                    )}
                   </div>
                 </div>
 
@@ -231,6 +351,9 @@ const ManageUsers = () => {
                     value={formData.username}
                     onChange={handleChange}
                   />
+                  {errors.username && (
+                    <p className="text-red-500 text-sm">{errors.username}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -246,36 +369,83 @@ const ManageUsers = () => {
                     value={formData.email}
                     onChange={handleChange}
                   />
+                  {errors.email && (
+                    <p className="text-red-500 text-sm">{errors.email}</p>
+                  )}
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-base">
+                      Password *
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        id="password"
+                        name="password"
+                        className="w-full p-3.5 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
+                        placeholder="••••••••"
+                        value={formData.password}
+                        onChange={handleChange}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                        aria-label={
+                          showPassword ? "Hide password" : "Show password"
+                        }
+                      >
+                        {showPassword ? (
+                          <EyeCloseIcon className="h-5 w-5 text-gray-400" />
+                        ) : (
+                          <EyeIcon className="h-5 w-5 text-gray-400" />
+                        )}
+                      </button>
+                    </div>
+                    {errors.password && (
+                      <p className="text-red-500 text-sm">{errors.password}</p>
+                    )}
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-base">
-                    Password *
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      id="password"
-                      name="password"
-                      className="w-full p-3.5 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
-                      placeholder="••••••••"
-                      value={formData.password}
-                      onChange={handleChange}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                      aria-label={
-                        showPassword ? "Hide password" : "Show password"
-                      }
-                    >
-                      {showPassword ? (
-                        <EyeIcon className="size-5" />
-                      ) : (
-                        <EyeCloseIcon className="size-5" />
-                      )}
-                    </button>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm_password" className="text-base">
+                      Confirm Password *
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        type={showConfirmPassword ? "text" : "password"}
+                        id="confirm_password"
+                        name="confirm_password"
+                        className="w-full p-3.5 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
+                        placeholder="••••••••"
+                        value={formData.confirm_password}
+                        onChange={handleChange}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                        aria-label={
+                          showConfirmPassword
+                            ? "Hide password"
+                            : "Show password"
+                        }
+                      >
+                        {showConfirmPassword ? (
+                          <EyeCloseIcon className="h-5 w-5 text-gray-400" />
+                        ) : (
+                          <EyeIcon className="h-5 w-5 text-gray-400" />
+                        )}
+                      </button>
+                    </div>
+                    {errors.confirm_password && (
+                      <p className="text-red-500 text-sm">
+                        {errors.confirm_password}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -311,14 +481,23 @@ const ManageUsers = () => {
                     placeholder="+1 (555) 123-4567"
                     value={formData.phone_number}
                     onChange={handleChange}
+                    onInput={handlePhoneNumberInput}
                   />
+                  {errors.phone_number && (
+                    <p className="text-red-500 text-sm">
+                      {errors.phone_number}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4">
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
+                    onClick={() => {
+                      setIsDialogOpen(false);
+                      setErrors({});
+                    }}
                     disabled={isSubmitting}
                   >
                     Cancel
@@ -345,7 +524,19 @@ const ManageUsers = () => {
 
         <UsersTable users={users} setUsers={setUsers} />
       </div>
-      <ToastContainer />
+      <ToastContainer
+        position="top-center"
+        autoClose={2000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        transition={Bounce}
+      />
     </div>
   );
 };

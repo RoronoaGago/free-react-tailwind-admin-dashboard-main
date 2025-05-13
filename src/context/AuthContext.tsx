@@ -9,7 +9,11 @@ import { login as authLogin, logout as authLogout } from "../api/auth";
 import { jwtDecode } from "jwt-decode";
 
 interface UserData {
+  user_id: string | number;
   username: string;
+  first_name: string;
+  last_name: string;
+  phone_number?: string;
   email: string;
 }
 interface AuthContextType {
@@ -29,9 +33,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Decode token and extract user info
   const decodeToken = (token: string): UserData => {
     try {
-      const decoded = jwtDecode<{ username: string; email: string }>(token);
+      const decoded = jwtDecode<{
+        user_id: string;
+        username: string;
+        email: string;
+        first_name: string;
+        last_name: string;
+      }>(token);
       return {
+        user_id: decoded.user_id,
         username: decoded.username,
+        first_name: decoded.first_name,
+        last_name: decoded.last_name,
         email: decoded.email,
       };
     } catch (error) {

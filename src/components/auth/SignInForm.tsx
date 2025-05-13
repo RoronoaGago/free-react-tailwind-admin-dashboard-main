@@ -40,9 +40,7 @@ export default function SignInForm() {
       navigate("/");
     } catch (err) {
       console.error("Login error:", err);
-      setError(
-        err instanceof Error ? err.message : "Invalid username or password"
-      );
+      setError("Invalid username or password");
       // Explicitly prevent default in case of error
       e.preventDefault();
     }

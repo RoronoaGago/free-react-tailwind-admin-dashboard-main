@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -29,12 +29,15 @@ import {
   ChevronsRight,
   X,
   Search,
+  Loader2,
 } from "lucide-react";
-import { EyeCloseIcon } from "@/icons";
+import { EyeCloseIcon, CalenderIcon } from "@/icons";
 import { User } from "@/lib/types";
 import Button from "@/components/ui/button/Button";
 import axios from "axios";
 import Badge from "@/components/ui/badge/Badge";
+import { useAuth } from "@/context/AuthContext";
+// Import useAuth hook
 
 type SortDirection = "asc" | "desc" | null;
 type SortableField = keyof Pick<
@@ -47,12 +50,40 @@ type SortableField = keyof Pick<
   | "phone_number"
   | "password"
 >;
+
 interface UsersTableProps {
   users: User[];
   setUsers: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
+interface FormErrors {
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  email?: string;
+  password?: string;
+  confirm_password?: string;
+  phone_number?: string;
+}
+
+// Validation functions
+const validateEmail = (email: string) => {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+};
+
+const validatePassword = (password: string) => {
+  const re = /^.{8,}$/;
+  return re.test(password);
+};
+
+const validatePhoneNumber = (phone: string) => {
+  const re = /^[+\d][\d\s]*$/;
+  return re.test(phone);
+};
+
 export default function UsersTable({ users, setUsers }: UsersTableProps) {
+  const { user: currentUser } = useAuth(); // Get current logged-in user
   // Data state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -70,10 +101,30 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [userToView, setUserToView] = useState<User | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Required fields for editing
+  const requiredFields = ["first_name", "last_name", "username", "email"];
+
+  // Check if form is valid
+  const isFormValid = useMemo(() => {
+    if (!selectedUser) return false;
+
+    return (
+      requiredFields.every(
+        (field) => selectedUser[field as keyof User]?.toString().trim() !== ""
+      ) && Object.keys(formErrors).length === 0
+    );
+  }, [selectedUser, formErrors]);
 
   // Fetch users
   useEffect(() => {
@@ -84,6 +135,7 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
         setUsers(response.data);
       } catch (err) {
         setError(err as Error);
+        toast.error("Failed to fetch users");
       } finally {
         setLoading(false);
       }
@@ -92,9 +144,82 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
     fetchUsers();
   }, []);
 
-  // Filter and sort users
+  // Handle form field changes with validation
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    if (!selectedUser) return;
+
+    const { name, value } = e.target;
+
+    // Update user data immediately
+    setSelectedUser((prev) => ({
+      ...prev!,
+      [name]: value,
+    }));
+
+    // Clear previous timeout
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+    }
+
+    // Set new timeout for validation
+    debounceTimeout.current = setTimeout(() => {
+      const newErrors = { ...formErrors };
+
+      switch (name) {
+        case "email":
+          if (!validateEmail(value)) {
+            newErrors.email = "Please enter a valid email address";
+          } else {
+            delete newErrors.email;
+          }
+          break;
+        case "password":
+          if (value && !validatePassword(value)) {
+            newErrors.password = "Password must be at least 8 characters";
+          } else {
+            delete newErrors.password;
+          }
+          break;
+        case "phone_number":
+          if (value && !validatePhoneNumber(value)) {
+            newErrors.phone_number = "Please enter a valid phone number";
+          } else {
+            delete newErrors.phone_number;
+          }
+          break;
+        default:
+          // For required fields
+          if (requiredFields.includes(name) && !value.trim()) {
+            newErrors[name as keyof FormErrors] = "This field is required";
+          } else {
+            delete newErrors[name as keyof FormErrors];
+          }
+      }
+
+      setFormErrors(newErrors);
+    }, 500);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+    };
+  }, []);
+
+  // Handle phone number input
+  const handlePhoneNumberInput = (e: React.FormEvent<HTMLInputElement>) => {
+    const input = e.target as HTMLInputElement;
+    input.value = input.value.replace(/[^0-9+]/g, "");
+  };
+
+  // Filter and sort users - EXCLUDE CURRENT USER
   const filteredAndSortedUsers = useMemo(() => {
-    let filtered = [...users];
+    let filtered = users.filter((user) => user.id !== currentUser?.user_id); // Exclude current user
 
     // Apply search filter
     if (searchTerm) {
@@ -121,7 +246,7 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
     }
 
     return filtered;
-  }, [users, searchTerm, sortConfig]);
+  }, [users, searchTerm, sortConfig, currentUser?.user_id]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredAndSortedUsers.length / itemsPerPage);
@@ -148,7 +273,8 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
 
   // Handle edit user
   const handleEditUser = (user: User) => {
-    setSelectedUser(user);
+    setSelectedUser({ ...user, password: "", confirm_password: "" });
+    setFormErrors({});
     setIsDialogOpen(true);
   };
 
@@ -169,20 +295,91 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
     e.preventDefault();
     if (!selectedUser) return;
 
+    if (!isFormValid) {
+      toast.error("Please fix the errors in the form", {
+        position: "top-center",
+        autoClose: 2000,
+        style: { fontFamily: "Outfit, sans-serif" },
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+      return;
+    }
+
+    // Open confirmation dialog before submitting
+    setIsConfirmDialogOpen(true);
+  };
+
+  // Handle confirmed edit
+  const handleConfirmedEdit = async () => {
+    if (!selectedUser) return;
+
+    setIsSubmitting(true);
+
     try {
-      const response = await axios.put(
+      const payload = {
+        ...selectedUser,
+        // Don't send password if it's empty
+        password: selectedUser.password || undefined,
+      };
+
+      await axios.put(
         `http://127.0.0.1:8000/api/users/${selectedUser.id}/`,
-        selectedUser
+        payload
       );
-      toast.success("User updated successfully!");
+
+      toast.success("User updated successfully!", {
+        position: "top-center",
+        autoClose: 2000,
+        style: { fontFamily: "Outfit, sans-serif" },
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
 
       // Refresh the user list
       const usersResponse = await axios.get("http://127.0.0.1:8000/api/users/");
       setUsers(usersResponse.data);
-    } catch (error) {
-      toast.error("Failed to update user");
-    } finally {
+
+      // Close all dialogs
       setIsDialogOpen(false);
+      setIsConfirmDialogOpen(false);
+    } catch (error) {
+      let errorMessage = "Failed to update user. Please try again.";
+
+      if (axios.isAxiosError(error) && error.response) {
+        if (error.response.data.username) {
+          errorMessage = "Username already exists.";
+        } else if (error.response.data.email) {
+          errorMessage = "Email already exists.";
+        } else if (error.response.data.password) {
+          errorMessage = "Password doesn't meet requirements.";
+        }
+      }
+
+      toast.error(errorMessage, {
+        position: "top-center",
+        autoClose: 2000,
+        style: { fontFamily: "Outfit, sans-serif" },
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -190,16 +387,41 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
   const handleDeleteConfirm = async () => {
     if (!userToDelete) return;
 
+    setIsSubmitting(true);
+
     try {
       await axios.delete(`http://127.0.0.1:8000/api/users/${userToDelete.id}/`);
-      toast.success("User deleted successfully!");
+      toast.success("User deleted successfully!", {
+        position: "top-center",
+        autoClose: 2000,
+        style: { fontFamily: "Outfit, sans-serif" },
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
 
       // Refresh the user list
       const usersResponse = await axios.get("http://127.0.0.1:8000/api/users/");
       setUsers(usersResponse.data);
     } catch (error) {
-      toast.error("Failed to delete user");
+      toast.error("Failed to delete user", {
+        position: "top-center",
+        autoClose: 2000,
+        style: { fontFamily: "Outfit, sans-serif" },
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
     } finally {
+      setIsSubmitting(false);
       setIsDeleteDialogOpen(false);
       setUserToDelete(null);
     }
@@ -207,8 +429,9 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
 
   // Loading and error states
   if (loading) return <Loading />;
-  if (error)
+  if (error) {
     return <div className="p-4 text-red-500">Error: {error.message}</div>;
+  }
 
   return (
     <div className="space-y-4">
@@ -309,7 +532,6 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
                   </div>
                 </TableCell>
 
-                {/* Repeat pattern for other sortable columns */}
                 <TableCell
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
@@ -540,96 +762,100 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName" className="text-base">
-                    First Name
+                  <Label htmlFor="first_name" className="text-base">
+                    First Name *
                   </Label>
                   <Input
                     type="text"
-                    id="firstName"
-                    name="firstName"
+                    id="first_name"
+                    name="first_name"
                     value={selectedUser.first_name}
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        first_name: e.target.value,
-                      })
-                    }
+                    onChange={handleChange}
+                    className={formErrors.first_name ? "border-red-500" : ""}
                   />
+                  {formErrors.first_name && (
+                    <p className="text-red-500 text-sm">
+                      {formErrors.first_name}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName" className="text-base">
-                    Last Name
+                  <Label htmlFor="last_name" className="text-base">
+                    Last Name *
                   </Label>
                   <Input
                     type="text"
-                    id="lastName"
-                    name="lastName"
+                    id="last_name"
+                    name="last_name"
                     value={selectedUser.last_name}
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        last_name: e.target.value,
-                      })
-                    }
+                    onChange={handleChange}
+                    className={formErrors.last_name ? "border-red-500" : ""}
                   />
+                  {formErrors.last_name && (
+                    <p className="text-red-500 text-sm">
+                      {formErrors.last_name}
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username" className="text-base">
+                  Username *
+                </Label>
                 <Input
                   type="text"
                   id="username"
                   name="username"
                   value={selectedUser.username}
-                  onChange={(e) =>
-                    setSelectedUser({
-                      ...selectedUser,
-                      username: e.target.value,
-                    })
-                  }
+                  onChange={handleChange}
+                  className={formErrors.username ? "border-red-500" : ""}
                 />
+                {formErrors.username && (
+                  <p className="text-red-500 text-sm">{formErrors.username}</p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-base">
-                  Email
+                  Email *
                 </Label>
                 <Input
                   type="email"
                   id="email"
                   name="email"
                   value={selectedUser.email}
-                  onChange={(e) =>
-                    setSelectedUser({
-                      ...selectedUser,
-                      email: e.target.value,
-                    })
-                  }
+                  onChange={handleChange}
+                  className={formErrors.email ? "border-red-500" : ""}
                 />
+                {formErrors.email && (
+                  <p className="text-red-500 text-sm">{formErrors.email}</p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-base">
+                <Label htmlFor="phone_number" className="text-base">
                   Phone Number
                 </Label>
                 <Input
                   type="tel"
-                  id="phone"
-                  name="phone"
+                  id="phone_number"
+                  name="phone_number"
                   value={selectedUser.phone_number || ""}
-                  onChange={(e) =>
-                    setSelectedUser({
-                      ...selectedUser,
-                      phone_number: e.target.value,
-                    })
-                  }
+                  onChange={handleChange}
+                  onInput={handlePhoneNumberInput}
+                  className={formErrors.phone_number ? "border-red-500" : ""}
                 />
+                {formErrors.phone_number && (
+                  <p className="text-red-500 text-sm">
+                    {formErrors.phone_number}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-base">
-                  Password
+                  Password (leave blank to keep current)
                 </Label>
                 <div className="relative">
                   <Input
@@ -637,12 +863,8 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
                     id="password"
                     name="password"
                     value={selectedUser.password || ""}
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        password: e.target.value,
-                      })
-                    }
+                    onChange={handleChange}
+                    className={formErrors.password ? "border-red-500" : ""}
                   />
                   <button
                     type="button"
@@ -656,6 +878,9 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
                     )}
                   </button>
                 </div>
+                {formErrors.password && (
+                  <p className="text-red-500 text-sm">{formErrors.password}</p>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
@@ -665,16 +890,72 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
                   onClick={() => {
                     setIsDialogOpen(false);
                     setSelectedUser(null);
+                    setFormErrors({});
                   }}
+                  disabled={isSubmitting}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" variant="primary">
-                  Save Changes
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={!isFormValid || isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="animate-spin size-4" />
+                      Saving...
+                    </span>
+                  ) : (
+                    "Save Changes"
+                  )}
                 </Button>
               </div>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Confirmation Dialog */}
+      <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <DialogContent className="w-full rounded-lg bg-white dark:bg-gray-800 p-8 shadow-xl">
+          <DialogHeader className="mb-8">
+            <DialogTitle className="text-3xl font-bold text-gray-800 dark:text-white">
+              Confirm Changes
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <p className="text-gray-600 dark:text-gray-400">
+              Are you sure you want to update this user's information?
+            </p>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsConfirmDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={handleConfirmedEdit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="animate-spin size-4" />
+                    Updating...
+                  </span>
+                ) : (
+                  "Confirm Changes"
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -753,8 +1034,8 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
 
           {userToDelete && (
             <div className="space-y-4">
-              <p className="text-gray-400 dark:text-white/90">
-                Are you sure you want to delete user{" "}
+              <p className="text-gray-600 dark:text-gray-400">
+                Are you sure you want to permanently delete user{" "}
                 <strong>
                   {userToDelete.first_name} {userToDelete.last_name}
                 </strong>
@@ -769,6 +1050,7 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
                     setIsDeleteDialogOpen(false);
                     setUserToDelete(null);
                   }}
+                  disabled={isSubmitting}
                 >
                   Cancel
                 </Button>
@@ -776,8 +1058,16 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
                   type="button"
                   variant="error"
                   onClick={handleDeleteConfirm}
+                  disabled={isSubmitting}
                 >
-                  Delete
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="animate-spin size-4" />
+                      Deleting...
+                    </span>
+                  ) : (
+                    "Delete"
+                  )}
                 </Button>
               </div>
             </div>
@@ -785,7 +1075,15 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
         </DialogContent>
       </Dialog>
 
-      <ToastContainer />
+      <ToastContainer
+        position="top-center"
+        autoClose={2000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+      />
     </div>
   );
 }

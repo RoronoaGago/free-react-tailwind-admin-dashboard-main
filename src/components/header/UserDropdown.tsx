@@ -33,14 +33,52 @@ export default function UserDropdown() {
     setIsLogoutDialogOpen(false);
   }
 
+  // Function to generate user initials
+  const getUserInitials = () => {
+    if (!user) return "U";
+    const firstNameChar = user.first_name?.charAt(0) || "";
+    const lastNameChar = user.last_name?.charAt(0) || "";
+    return `${firstNameChar}${lastNameChar}`.toUpperCase() || "U";
+  };
+
+  // Function to generate random background color based on user id or name
+  const getAvatarColor = () => {
+    if (!user) return "bg-gray-500";
+    const colors = [
+      "bg-blue-500",
+      "bg-green-500",
+      "bg-purple-500",
+      "bg-pink-500",
+      "bg-orange-500",
+      "bg-indigo-500",
+    ];
+    const hash =
+      user.user_id && typeof user.user_id === "string"
+        ? user.user_id.charCodeAt(0) +
+          user.user_id.charCodeAt(user.user_id.length - 1)
+        : (typeof user.first_name === "string"
+            ? user.first_name.charCodeAt(0)
+            : 0) +
+          (typeof user.last_name === "string"
+            ? user.last_name.charCodeAt(0)
+            : 0);
+
+    return colors[hash % colors.length];
+  };
+
   return (
     <div className="relative">
       <button
         onClick={toggleDropdown}
-        className="flex items-center text-gray-700 dropdown-toggle dark:text-gray-400"
+        className="flex items-center gap-2 text-gray-700 dropdown-toggle dark:text-gray-400"
       >
-        <span className="block mr-1 font-medium text-theme-sm">
-          {user?.username}
+        <div
+          className={`flex items-center justify-center w-8 h-8 rounded-full ${getAvatarColor()} text-white font-medium`}
+        >
+          {getUserInitials()}
+        </div>
+        <span className="block font-medium text-theme-sm">
+          {user?.first_name}
         </span>
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
@@ -67,16 +105,24 @@ export default function UserDropdown() {
         onClose={closeDropdown}
         className="absolute right-0 mt-[17px] flex w-[260px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
       >
-        <div>
-          <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-            {user?.username}
-          </span>
-          <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-            {user?.email}
-          </span>
+        {/* User Info Section */}
+        <div className="flex items-center gap-3 pb-3 border-b border-gray-200 dark:border-gray-800">
+          <div
+            className={`flex items-center justify-center w-10 h-10 rounded-full ${getAvatarColor()} text-white font-medium`}
+          >
+            {getUserInitials()}
+          </div>
+          <div>
+            <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
+              {user?.first_name} {user?.last_name}
+            </span>
+            <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
+              {user?.email}
+            </span>
+          </div>
         </div>
 
-        <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
+        <ul className="flex flex-col gap-1 pt-4 pb-3">
           <li>
             <DropdownItem
               onItemClick={closeDropdown}
@@ -103,9 +149,10 @@ export default function UserDropdown() {
             </DropdownItem>
           </li>
         </ul>
+
         <button
           onClick={handleLogoutClick}
-          className="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+          className="flex items-center gap-3 px-3 py-2 mt-1 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
         >
           <svg
             className="fill-gray-500 group-hover:fill-gray-700 dark:group-hover:fill-gray-300"

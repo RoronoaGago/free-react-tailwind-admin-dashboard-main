@@ -44,7 +44,7 @@ api.interceptors.response.use(
                 // If refresh fails, clear storage and redirect to login
                 localStorage.removeItem('access_token');
                 localStorage.removeItem('refresh_token');
-                window.location.href = '/login';
+
                 return Promise.reject(err);
             }
         }

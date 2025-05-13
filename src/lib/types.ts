@@ -4,8 +4,10 @@ export type User = {
     last_name: string;
     username: string;
     email: string;
+    date_of_birth?: string;
     phone_number: string;
     password: string;
+    confirm_password?: string;
 
 }
 export type TransactionFormData = {
@@ -35,6 +37,7 @@ export type UserFormData = {
     last_name: string;
     username: string;
     password: string;
+    confirm_password?: string;
     date_of_birth: string; // Update the type to allow Date | null
     email: string;
     phone_number: string;
