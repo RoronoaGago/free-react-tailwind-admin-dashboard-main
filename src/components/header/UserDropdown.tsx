@@ -52,10 +52,10 @@ export default function UserDropdown() {
       "bg-orange-500",
       "bg-indigo-500",
     ];
+    let stringId = user.user_id.toString();
     const hash =
-      user.user_id && typeof user.user_id === "string"
-        ? user.user_id.charCodeAt(0) +
-          user.user_id.charCodeAt(user.user_id.length - 1)
+      stringId && typeof stringId === "string"
+        ? stringId.charCodeAt(0) + stringId.charCodeAt(stringId.length - 1)
         : (typeof user.first_name === "string"
             ? user.first_name.charCodeAt(0)
             : 0) +

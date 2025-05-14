@@ -37,6 +37,7 @@ import Button from "@/components/ui/button/Button";
 import axios from "axios";
 import Badge from "@/components/ui/badge/Badge";
 import { useAuth } from "@/context/AuthContext";
+import { calculateAge } from "@/lib/helpers";
 // Import useAuth hook
 
 type SortDirection = "asc" | "desc" | null;
@@ -133,6 +134,7 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
       try {
         const response = await axios.get("http://127.0.0.1:8000/api/users/");
         setUsers(response.data);
+        console.log(response.data);
       } catch (err) {
         setError(err as Error);
         toast.error("Failed to fetch users");
@@ -590,6 +592,13 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
                     </span>
                   </div>
                 </TableCell>
+
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                >
+                  Age
+                </TableCell>
                 <TableCell
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
@@ -632,6 +641,9 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
                     </TableCell>
                     <TableCell className="px-5 py-4 text-gray-800 text-start text-theme-sm dark:text-gray-400">
                       {user.email}
+                    </TableCell>
+                    <TableCell className="px-5 py-4 text-gray-800 text-start text-theme-sm dark:text-gray-400">
+                      {calculateAge(user.date_of_birth)}
                     </TableCell>
                     <TableCell className="px-5 py-4 text-gray-800 text-start text-theme-sm dark:text-gray-400">
                       {user.phone_number}
@@ -832,27 +844,6 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
                   <p className="text-red-500 text-sm">{formErrors.email}</p>
                 )}
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone_number" className="text-base">
-                  Phone Number
-                </Label>
-                <Input
-                  type="tel"
-                  id="phone_number"
-                  name="phone_number"
-                  value={selectedUser.phone_number || ""}
-                  onChange={handleChange}
-                  onInput={handlePhoneNumberInput}
-                  className={formErrors.phone_number ? "border-red-500" : ""}
-                />
-                {formErrors.phone_number && (
-                  <p className="text-red-500 text-sm">
-                    {formErrors.phone_number}
-                  </p>
-                )}
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-base">
                   Password (leave blank to keep current)
@@ -880,6 +871,45 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
                 </div>
                 {formErrors.password && (
                   <p className="text-red-500 text-sm">{formErrors.password}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="date_of_birth" className="text-base">
+                  Birthdate
+                </Label>
+                <div className="relative">
+                  <Input
+                    type="date"
+                    id="date_of_birth"
+                    name="date_of_birth"
+                    className="[&::-webkit-calendar-picker-indicator]:opacity-0 w-full p-3.5 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
+                    value={selectedUser?.date_of_birth}
+                    onChange={handleChange}
+                    max={new Date().toISOString().split("T")[0]}
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+                    <CalenderIcon className="size-5" />
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone_number" className="text-base">
+                  Phone Number
+                </Label>
+                <Input
+                  type="tel"
+                  id="phone_number"
+                  name="phone_number"
+                  value={selectedUser.phone_number || ""}
+                  onChange={handleChange}
+                  onInput={handlePhoneNumberInput}
+                  className={formErrors.phone_number ? "border-red-500" : ""}
+                />
+                {formErrors.phone_number && (
+                  <p className="text-red-500 text-sm">
+                    {formErrors.phone_number}
+                  </p>
                 )}
               </div>
 

@@ -6,7 +6,7 @@ export const formatCurrency = (value: number): string => {
   }).format(value);
 };
 
-export const calculateAge = (dateOfBirth: string) => {
+export const calculateAge = (dateOfBirth: string | undefined) => {
   if (!dateOfBirth) return null; // Handle case where dateOfBirth is not provided
 
   const birthDate = new Date(dateOfBirth);
