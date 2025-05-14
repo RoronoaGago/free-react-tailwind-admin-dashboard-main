@@ -494,7 +494,8 @@ const ManageUsers = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
                       setIsDialogOpen(false);
                       setErrors({});
                     }}

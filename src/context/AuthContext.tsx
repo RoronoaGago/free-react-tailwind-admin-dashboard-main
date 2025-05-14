@@ -22,7 +22,7 @@ interface AuthContextType {
   user: UserData | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
-  updateUser: (userData: UserData) => void; // Add this
+  updateUser: (userData: UserData, newToken?: string) => void; // Add this
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -104,13 +104,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsAuthenticated(false);
     setUser(null);
   };
-  const updateUser = (userData: UserData) => {
+  const updateUser = (userData: UserData, newToken?: string) => {
     setUser(userData);
-    // If you want to update the token as well when user data changes
-    const token = localStorage.getItem("access_token");
-    if (token) {
-      const newToken = { ...jwtDecode(token), ...userData };
-      // You might need to re-sign the token here if your backend provides that capability
+    if (newToken) {
+      localStorage.setItem("access_token", newToken);
     }
   };
   return (

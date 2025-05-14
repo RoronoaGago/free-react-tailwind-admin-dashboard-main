@@ -192,7 +192,6 @@ export default function UserProfiles() {
     }, 500);
   };
 
-  // Handle confirmed edit
   const handleConfirmedEdit = async () => {
     if (!editUser) return;
 
@@ -214,35 +213,42 @@ export default function UserProfiles() {
       setDisplayUser(response.data);
       console.log(response.data);
       // Update auth context if this is the current user
-      // Update auth context if this is the current user
-      // Update auth context if this is the current user
       if (user?.user_id === editUser.id) {
-        updateUser({
-          user_id: response.data.id,
-          username: response.data.username,
-          first_name: response.data.first_name,
-          last_name: response.data.last_name,
-          email: response.data.email,
-          phone_number: response.data.phone_number,
-        });
-
-        // If backend returned a new token, update it
+        // Case 1: Sensitive data changed → Update token & user
         if (response.data.token) {
+          console.log("this is inside");
           localStorage.setItem("access_token", response.data.token.access);
           localStorage.setItem("refresh_token", response.data.token.refresh);
+          console.log("ohmahgah");
+          console.log(response.data.token.access);
+          updateUser(
+            {
+              user_id: response.data.id,
+              username: response.data.username,
+              first_name: response.data.first_name,
+              last_name: response.data.last_name,
+              email: response.data.email,
+              phone_number: response.data.phone_number,
+            },
+            response.data.token.access
+          );
+          toast.success("Profile updated! Please log in again.");
+        }
+        // Case 2: Non-sensitive data → Just update user
+        else {
+          updateUser({
+            user_id: response.data.id,
+            username: response.data.username,
+            first_name: response.data.first_name,
+            last_name: response.data.last_name,
+            email: response.data.email,
+            phone_number: response.data.phone_number,
+          });
+          toast.success("Profile updated!");
         }
       }
-      // Update auth context if this is the current user
-      // if (user?.user_id === editUser.id) {
-      //   // Update both context and localStorage
-      //   updateUser(response.data);
 
-      //   // Update JWT token if your API returns a new one
-      //   if (response.data.token) {
-      //     localStorage.setItem('token', response.data.token);
-      //   }
-      // }
-
+      // Show success toast with consistent styling
       toast.success("Profile updated successfully!", {
         position: "top-center",
         autoClose: 2000,
