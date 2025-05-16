@@ -232,7 +232,7 @@ export default function UserProfiles() {
             },
             response.data.token.access
           );
-          toast.success("Profile updated! Please log in again.");
+          // toast.success("Profile updated! Please log in again.");
         }
         // Case 2: Non-sensitive data → Just update user
         else {
