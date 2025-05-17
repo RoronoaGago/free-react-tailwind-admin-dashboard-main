@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
-
+import mobileLogo from "../images/bubble-magic/bubble-magic-mobile-logo.svg";
+import desktopLogo from "../images/bubble-magic/bubble-magic-logo.svg";
 // Assume these icons are imported from an icon library
 import {
   BoxCubeIcon,
@@ -327,26 +328,21 @@ const AppSidebar: React.FC = () => {
             <>
               <img
                 className="dark:hidden"
-                src="/images/logo/bubble-magic-logo.svg"
+                src={desktopLogo}
                 alt="Logo"
                 width={150}
                 height={40}
               />
               <img
                 className="hidden dark:block"
-                src="/images/logo/bubble-magic-logo.svg"
+                src={desktopLogo}
                 alt="Logo"
                 width={150}
                 height={40}
               />
             </>
           ) : (
-            <img
-              src="/images/logo/logo-icon.svg"
-              alt="Logo"
-              width={32}
-              height={32}
-            />
+            <img src={mobileLogo} alt="Logo" width={32} height={32} />
           )}
         </Link>
       </div>

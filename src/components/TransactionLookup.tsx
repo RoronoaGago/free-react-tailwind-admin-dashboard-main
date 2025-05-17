@@ -97,7 +97,7 @@ export default function TransactionLookup() {
 
     try {
       const response = await axios.get(
-        `http://192.168.1.147:8000/api/customer/transactions/${transactionId}/`
+        `http://172.20.10.7:8000/api/customer/transactions/${transactionId}/`
       );
 
       if (!response.data) {
@@ -129,7 +129,7 @@ export default function TransactionLookup() {
     } catch (err: unknown) {
       let errorMessage = "An unexpected error occurred";
       let isNotFound = false;
-
+      console.error(err)
       if (axios.isAxiosError(err)) {
         isNotFound = err.response?.status === 404;
         errorMessage = isNotFound
@@ -161,7 +161,7 @@ export default function TransactionLookup() {
       console.log(rating);
       console.log(transactionId);
       await axios.post(
-        `http://192.168.1.147:8000/api/transactions/${parseInt(
+        `http://172.20.10.7:8000/api/transactions/${parseInt(
           transactionId
         )}/rate/`,
         {
@@ -334,7 +334,7 @@ export default function TransactionLookup() {
             </div>
           )}
 
-          <div className="mt-8 text-center">
+          {/* <div className="mt-8 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Need help?{" "}
               <button
@@ -344,7 +344,7 @@ export default function TransactionLookup() {
                 Contact support
               </button>
             </p>
-          </div>
+          </div> */}
         </div>
       </div>
 

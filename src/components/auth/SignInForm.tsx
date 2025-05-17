@@ -1,6 +1,6 @@
 import { useState, useCallback, FormEvent, ChangeEvent } from "react";
 import { useNavigate } from "react-router";
-import { EyeCloseIcon, EyeIcon } from "../../icons";
+import { EyeIcon, EyeClosedIcon } from "lucide-react";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import { Loading } from "../common/Loading";
@@ -71,7 +71,7 @@ export default function SignInForm() {
 
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
-              Welcome Back
+              Services and Sales Tracking Management System
             </h1>
             <p className="mt-2 text-gray-600 dark:text-gray-400">
               Please enter your details to sign in
@@ -141,7 +141,7 @@ export default function SignInForm() {
                   {showPassword ? (
                     <EyeIcon className="w-5 h-5" />
                   ) : (
-                    <EyeCloseIcon className="w-5 h-5" />
+                    <EyeClosedIcon className="w-5 h-5" />
                   )}
                 </button>
               </div>

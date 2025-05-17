@@ -27,9 +27,9 @@ const serviceTypes = [
 
 const pricing = {
   regularClothes: 35,
-  jeans: 45,
-  linens: 50,
-  comforter: 40,
+  jeans: 55,
+  linens: 55,
+  comforter: 65,
 };
 
 type TransactionFormData = {
@@ -188,10 +188,10 @@ const ManageTransactions = () => {
       toast.error("Please fill in contact number");
       return false;
     }
-    if (!/^\d+$/.test(formData.customer.contactNumber)) {
-      toast.error("Contact number must contain only digits");
-      return false;
-    }
+    // if (/^\+?\d+$/.test(formData.customer.contactNumber)) {
+    //   toast.error("Contact number must contain only digits");
+    //   return false;
+    // }
     if (!formData.serviceType) {
       toast.error("Please select service type");
       return false;
@@ -303,7 +303,7 @@ const ManageTransactions = () => {
       formData.customer.lastName.trim() &&
       formData.customer.address.trim() &&
       formData.customer.contactNumber.trim() &&
-      /^\d+$/.test(formData.customer.contactNumber) &&
+      /^\+?\d[\d\s]*$/.test(formData.customer.contactNumber) &&
       formData.serviceType &&
       (formData.regularClothesWeight > 0 ||
         formData.jeansWeight > 0 ||
@@ -470,7 +470,7 @@ const ManageTransactions = () => {
                         type="number"
                         id="jeansWeight"
                         name="jeansWeight"
-                        step={0.1}
+                        step={0.01}
                         min="0"
                         value={
                           formData.jeansWeight === 0 ? "" : formData.jeansWeight
@@ -492,7 +492,7 @@ const ManageTransactions = () => {
                         type="number"
                         id="linensWeight"
                         name="linensWeight"
-                        step={0.1}
+                        step={0.01}
                         min="0"
                         value={
                           formData.linensWeight === 0
@@ -516,7 +516,7 @@ const ManageTransactions = () => {
                         type="number"
                         id="comforterWeight"
                         name="comforterWeight"
-                        step={0.1}
+                        step={0.01}
                         min="0"
                         value={
                           formData.comforterWeight === 0
@@ -694,22 +694,6 @@ const ManageTransactions = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Notes Field */}
-              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold mb-3 text-gray-700 dark:text-white">
-                  Additional Notes
-                </h3>
-                <textarea
-                  className="w-full p-2 border rounded-lg"
-                  rows={3}
-                  placeholder="Any special instructions..."
-                  value={formData.notes || ""}
-                  onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
-                  }
-                />
-              </div>
             </div>
           </div>
 
@@ -764,7 +748,7 @@ const ManageTransactions = () => {
 
             <div className="p-4 bg-white rounded-lg border border-gray-200">
               <QRCode
-                value={`http://192.168.1.147:5173/transaction-lookup/${latestTransactionId}`}
+                value={`http://172.20.10.7:5173/transaction-lookup/${latestTransactionId}`}
                 size={200}
                 level="H"
               />

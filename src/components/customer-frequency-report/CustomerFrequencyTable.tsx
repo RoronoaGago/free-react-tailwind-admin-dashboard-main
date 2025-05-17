@@ -12,22 +12,40 @@ import { CustomerData } from "@/pages/CustomerFrequencyReport";
 interface CustomerFrequencyTableProps {
   data: CustomerData[] | null;
   loading: boolean;
-  sortBy?: "total_spent" | "total_transactions" | "average_spent"; // Optional sort parameter
+  sortBy?: "total_spent" | "total_transactions" | "average_spent";
 }
 
 export default function CustomerFrequencyTable({
   data,
   loading,
-  sortBy = "total_transactions", // Default to sorting by total spent
+  sortBy = "total_transactions",
 }: CustomerFrequencyTableProps) {
   const [error, setError] = useState<Error | null>(null);
 
-  // Sort the data by the specified field (descending order)
+  // Sort the data with multi-level sorting
   const sortedData = useMemo(() => {
     if (!data) return null;
 
     // Create a copy of the array to avoid mutating the original
-    return [...data].sort((a, b) => b[sortBy] - a[sortBy]);
+    return [...data].sort((a, b) => {
+      // Primary sort
+      if (b[sortBy] !== a[sortBy]) {
+        return b[sortBy] - a[sortBy];
+      }
+
+      // Secondary sort by total_spent if primary sort values are equal
+      if (b.total_spent !== a.total_spent) {
+        return b.total_spent - a.total_spent;
+      }
+
+      // Tertiary sort by average_spent if both primary and secondary are equal
+      if (b.average_spent !== a.average_spent) {
+        return b.average_spent - a.average_spent;
+      }
+
+      // If all sort fields are equal, maintain original order
+      return 0;
+    });
   }, [data, sortBy]);
 
   // Format currency function

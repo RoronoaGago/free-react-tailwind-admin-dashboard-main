@@ -27,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import Label from "@/components/form/Label";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
@@ -78,6 +79,9 @@ export default function TransactionsTable({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [transactionToView, setTransactionToView] =
+    useState<Transaction | null>(null);
 
   const [sortConfig, setSortConfig] = useState<{
     key: keyof Transaction;
@@ -113,7 +117,10 @@ export default function TransactionsTable({
 
     fetchTransactions();
   }, []);
-
+  const handleViewTransaction = (transaction: Transaction) => {
+    setTransactionToView(transaction);
+    setIsViewDialogOpen(true);
+  };
   const filteredTransactions = useMemo(() => {
     let filtered = [...transactions];
 
@@ -294,10 +301,10 @@ export default function TransactionsTable({
       toast.error("Please fill in contact number");
       return false;
     }
-    if (!/^\d+$/.test(selectedTransaction?.customer.contact_number)) {
-      toast.error("Contact number must contain only digits");
-      return false;
-    }
+    // if (!/^\d+$/.test(selectedTransaction?.customer.contact_number)) {
+    //   toast.error("Contact number must contain only digits");
+    //   return false;
+    // }
     if (!selectedTransaction.service_type) {
       toast.error("Please select service type");
       return false;
@@ -344,7 +351,7 @@ export default function TransactionsTable({
       selectedTransaction?.customer.last_name.trim() &&
       selectedTransaction?.customer.address.trim() &&
       selectedTransaction?.customer.contact_number.trim() &&
-      /^\d+$/.test(selectedTransaction?.customer.contact_number) &&
+      /^\+?\d[\d\s]*$/.test(selectedTransaction?.customer.contact_number) &&
       selectedTransaction?.service_type &&
       (selectedTransaction?.regular_clothes_weight > 0 ||
         selectedTransaction?.jeans_weight > 0 ||
@@ -406,7 +413,7 @@ export default function TransactionsTable({
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
         <div className="max-w-full overflow-x-auto">
           <Table>
             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
@@ -585,7 +592,11 @@ export default function TransactionsTable({
             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
               {currentItems.length > 0 ? (
                 currentItems.map((transaction) => (
-                  <TableRow key={transaction.id}>
+                  <TableRow
+                    key={transaction.id}
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                    onClick={() => handleViewTransaction(transaction)}
+                  >
                     <TableCell className="px-5 py-4 sm:px-6 text-start">
                       <div className="flex items-center gap-3">
                         <span className="block font-medium text-gray-800 text-theme-sm dark:text-gray-400">
@@ -642,13 +653,19 @@ export default function TransactionsTable({
                     </TableCell>
                     <TableCell className="px-5 py-4 text-gray-800 text-start text-theme-sm dark:text-gray-400 space-x-2">
                       <button
-                        onClick={() => handleEditTransaction(transaction)}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent event bubbling
+                          handleEditTransaction(transaction);
+                        }}
                         className="px-4 py-2 bg-blue-light-500 text-white dark:text-white rounded-md hover:bg-blue-light-600 transition-colors"
                       >
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDeleteClick(transaction)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(transaction);
+                        }}
                         className="px-4 py-2 bg-error-500 text-white dark:text-white rounded-md hover:bg-error-600 transition-colors"
                       >
                         Delete
@@ -902,6 +919,7 @@ export default function TransactionsTable({
                         type="number"
                         id="regularClothesWeight"
                         name="regularClothesWeight"
+                        step={0.01}
                         min="0"
                         value={selectedTransaction.regular_clothes_weight}
                         onChange={(e) =>
@@ -927,6 +945,7 @@ export default function TransactionsTable({
                         type="number"
                         id="jeansWeight"
                         name="jeansWeight"
+                        step={0.01}
                         min="0"
                         value={selectedTransaction.jeans_weight}
                         onChange={(e) =>
@@ -951,6 +970,7 @@ export default function TransactionsTable({
                         type="number"
                         id="linensWeight"
                         name="linensWeight"
+                        step={0.01}
                         min="0"
                         value={selectedTransaction.linens_weight}
                         onChange={(e) =>
@@ -975,6 +995,7 @@ export default function TransactionsTable({
                         type="number"
                         id="comforterWeight"
                         name="comforterWeight"
+                        step={0.01}
                         min="0"
                         value={selectedTransaction.comforter_weight}
                         onChange={(e) =>
@@ -1208,6 +1229,242 @@ export default function TransactionsTable({
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* View Transaction Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="w-full min-w-4xl rounded-lg bg-white dark:bg-gray-800 p-8 shadow-xl">
+          <DialogHeader className="mb-8">
+            <DialogTitle className="text-3xl font-bold text-gray-800 dark:text-white">
+              Transaction Details
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-gray-400">
+              Detailed information about the transaction
+            </DialogDescription>
+          </DialogHeader>
+
+          {transactionToView && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left Column - Customer Details */}
+                <div className="space-y-6">
+                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold mb-3 text-gray-700 dark:text-white">
+                      Customer Details
+                    </h3>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-300">
+                          Full Name:
+                        </p>
+                        <p className="font-medium">
+                          {transactionToView.customer.first_name}{" "}
+                          {transactionToView.customer.last_name}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-300">
+                          Contact Number:
+                        </p>
+                        <p className="font-medium">
+                          {transactionToView.customer.contact_number}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-300">
+                          Address:
+                        </p>
+                        <p className="font-medium">
+                          {transactionToView.customer.address}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold mb-3 text-gray-700 dark:text-white">
+                      Transaction Information
+                    </h3>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-300">
+                          Transaction ID:
+                        </p>
+                        <p className="font-medium">#{transactionToView.id}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-300">
+                          Service Type:
+                        </p>
+                        <p className="font-medium">
+                          {transactionToView.service_type_display}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <p className="text-sm text-gray-500 dark:text-gray-300">
+                          Status:
+                        </p>
+                        <p className="font-medium">
+                          <Badge
+                            size="sm"
+                            color={
+                              transactionToView.status === "completed"
+                                ? "success"
+                                : transactionToView.status ===
+                                  "ready_for_pickup"
+                                ? "primary"
+                                : transactionToView.status === "in_progress"
+                                ? "info"
+                                : transactionToView.status === "cancelled"
+                                ? "error"
+                                : "warning"
+                            }
+                          >
+                            {transactionToView.status_display}
+                          </Badge>
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-300">
+                          Date Created:
+                        </p>
+                        <p className="font-medium">
+                          {new Date(
+                            transactionToView.created_at
+                          ).toLocaleString()}
+                        </p>
+                      </div>
+                      {transactionToView.completed_at && (
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-300">
+                            Date Completed:
+                          </p>
+                          <p className="font-medium">
+                            {new Date(
+                              transactionToView.completed_at
+                            ).toLocaleString()}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - Laundry Details */}
+                <div className="space-y-6">
+                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold mb-3 text-gray-700 dark:text-white">
+                      Laundry Items
+                    </h3>
+                    <div className="space-y-4">
+                      {transactionToView.regular_clothes_weight > 0 && (
+                        <div className="flex justify-between">
+                          <span>
+                            Regular Clothes (
+                            {transactionToView.regular_clothes_weight} kg)
+                          </span>
+                          <span>
+                            {formatCurrency(
+                              calculateItemTotal(
+                                transactionToView.regular_clothes_weight,
+                                pricing.regularClothes
+                              )
+                            )}
+                          </span>
+                        </div>
+                      )}
+                      {transactionToView.jeans_weight > 0 && (
+                        <div className="flex justify-between">
+                          <span>
+                            Jeans ({transactionToView.jeans_weight} kg)
+                          </span>
+                          <span>
+                            {formatCurrency(
+                              calculateItemTotal(
+                                transactionToView.jeans_weight,
+                                pricing.jeans
+                              )
+                            )}
+                          </span>
+                        </div>
+                      )}
+                      {transactionToView.linens_weight > 0 && (
+                        <div className="flex justify-between">
+                          <span>
+                            Beddings/Linens ({transactionToView.linens_weight}{" "}
+                            kg)
+                          </span>
+                          <span>
+                            {formatCurrency(
+                              calculateItemTotal(
+                                transactionToView.linens_weight,
+                                pricing.linens
+                              )
+                            )}
+                          </span>
+                        </div>
+                      )}
+                      {transactionToView.comforter_weight > 0 && (
+                        <div className="flex justify-between">
+                          <span>
+                            Comforter ({transactionToView.comforter_weight} kg)
+                          </span>
+                          <span>
+                            {formatCurrency(
+                              calculateItemTotal(
+                                transactionToView.comforter_weight,
+                                pricing.comforter
+                              )
+                            )}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold mb-3 text-gray-700 dark:text-white">
+                      Pricing Summary
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span>Subtotal:</span>
+                        <span>
+                          {formatCurrency(transactionToView.subtotal)}
+                        </span>
+                      </div>
+                      {transactionToView.additional_fee > 0 && (
+                        <div className="flex justify-between">
+                          <span>Additional Fee:</span>
+                          <span>
+                            {formatCurrency(transactionToView.additional_fee)}
+                          </span>
+                        </div>
+                      )}
+                      <div className="border-t border-gray-200 dark:border-gray-600 pt-3 mt-3">
+                        <div className="flex justify-between font-bold">
+                          <span>Grand Total:</span>
+                          <span className="text-blue-600 dark:text-blue-400 text-lg">
+                            {formatCurrency(transactionToView.grand_total)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsViewDialogOpen(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

@@ -10,10 +10,10 @@ import { Bounce, ToastContainer, toast } from "react-toastify";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import UsersTable from "../components/tables/BasicTables/UsersTable";
 import Button from "../components/ui/button/Button";
-import { CalenderIcon, EyeCloseIcon, PlusIcon } from "../icons";
+import { CalenderIcon, PlusIcon } from "../icons";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
-import { EyeIcon, Loader2 } from "lucide-react";
+import { EyeIcon, Loader2, EyeClosedIcon } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { UserFormData } from "@/lib/types";
 import axios from "axios";
@@ -397,7 +397,7 @@ const ManageUsers = () => {
                         }
                       >
                         {showPassword ? (
-                          <EyeCloseIcon className="h-5 w-5 text-gray-400" />
+                          <EyeClosedIcon className="h-5 w-5 text-gray-400" />
                         ) : (
                           <EyeIcon className="h-5 w-5 text-gray-400" />
                         )}
@@ -435,7 +435,7 @@ const ManageUsers = () => {
                         }
                       >
                         {showConfirmPassword ? (
-                          <EyeCloseIcon className="h-5 w-5 text-gray-400" />
+                          <EyeClosedIcon className="h-5 w-5 text-gray-400" />
                         ) : (
                           <EyeIcon className="h-5 w-5 text-gray-400" />
                         )}
