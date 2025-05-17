@@ -1,5 +1,7 @@
 # Services and Sales Tracking Management System for Bubble Magic Laundry Shop
 
+![Bubble Magic Laundry Shop](public/images/dashboard.png)
+
 ## Overview
 
 The **Services and Sales Tracking Management System** is designed to streamline operations at Bubble Magic Laundry Shop. This system allows for efficient management of users, transactions, and sales reporting, enhancing the overall customer experience and operational efficiency.
