@@ -23,7 +23,6 @@ The **Services and Sales Tracking Management System** is designed to streamline 
 ### Manage Users
 
 - Create, update, and delete user accounts.
-- Role-based access control to ensure security and proper permissions.
 
 ### Login
 
@@ -44,11 +43,13 @@ The **Services and Sales Tracking Management System** is designed to streamline 
 
 - Generate detailed sales reports to analyze revenue and performance.
 - Visualize data using charts for better insights.
+- Export data as Excel File for better decision making
 
 ### Customer Frequency Report
 
 - Track customer visits and frequency of transactions.
 - Generate reports to identify loyal customers and trends.
+- Export data as Excel File for better decision making
 
 ## Getting Started
 
