@@ -52,6 +52,7 @@ type SortableField = keyof Pick<
   | "phone_number"
   | "password"
   | "is_active"
+  | "date_joined"
 >;
 
 interface UsersTableProps {
@@ -91,7 +92,10 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
   const [sortConfig, setSortConfig] = useState<{
     key: SortableField;
     direction: SortDirection;
-  } | null>(null);
+  } | null>({
+    key: "date_joined", // Add date_joined to your SortableField type
+    direction: "desc", // Newest first
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
@@ -136,10 +140,11 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
         },
       });
       setUsers(response.data);
-      setFilteredUsers(response.data); // Initialize filtered users
+      setFilteredUsers(response.data);
+      // Reset to default sort (newest first)
+      setSortConfig({ key: "date_joined", direction: "desc" });
     } catch (err) {
-      setError(err as Error);
-      toast.error("Failed to fetch users");
+      // error handling
     } finally {
       setLoading(false);
     }
@@ -238,6 +243,14 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
   const sortedUsers = useMemo(() => {
     if (sortConfig !== null) {
       return [...filteredUsers].sort((a, b) => {
+        // Special handling for date fields
+        if (sortConfig.key === "date_joined") {
+          const aDate = new Date(a.date_joined).getTime();
+          const bDate = new Date(b.date_joined).getTime();
+          return sortConfig.direction === "asc" ? aDate - bDate : bDate - aDate;
+        }
+
+        // Normal sorting for other fields
         const aValue = a[sortConfig.key];
         const bValue = b[sortConfig.key];
         if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;

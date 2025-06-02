@@ -5,6 +5,7 @@ export type User = {
     username: string;
     email: string;
     date_of_birth?: string;
+    date_joined: string;
     phone_number: string;
     is_active: boolean;
     password: string;
