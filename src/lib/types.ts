@@ -12,6 +12,10 @@ export type User = {
     confirm_password?: string;
 
 }
+
+
+
+
 export type TransactionFormData = {
     customer: {
         firstName: string;
@@ -49,7 +53,18 @@ export type NavItem = {
     name: string;
     icon: React.ReactNode;
     path?: string;
-    subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+    subItems?: SubItem[];
+    roles?: string[];
+    new?: boolean;
+    pro?: boolean;
+};
+
+export type SubItem = {
+    name: string;
+    path: string;
+    pro?: boolean;
+    new?: boolean;
+    roles?: string[];
 };
 
 export type Transaction = {

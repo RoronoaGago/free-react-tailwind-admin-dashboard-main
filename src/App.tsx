@@ -13,6 +13,8 @@ import SalesReport from "./pages/SalesReport";
 import CustomerFrequencyReport from "./pages/CustomerFrequencyReport";
 import Home from "./pages/Dashboard/Home";
 import TransactionLookup from "./components/TransactionLookup";
+import FundRequest from "./pages/FundRequest";
+import RequestsList from "./pages/RequestList";
 
 const App = () => {
   return (
@@ -34,6 +36,15 @@ const App = () => {
           >
             <Route path="/" element={<Home />} />
             <Route path="/users" element={<ManageUsers />} />
+            <Route
+              path="/fund-request/create-fund-request"
+              element={<FundRequest />}
+            />
+            <Route
+              path="/fund-request/request-list"
+              element={<RequestsList />}
+            />
+            <Route path="/liquidation" element={<ManageUsers />} />
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/transactions" element={<ManageTransactions />} />
             <Route path="/status" element={<ManageServideStatus />} />

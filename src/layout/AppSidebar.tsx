@@ -17,97 +17,121 @@ import {
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { NavItem } from "@/lib/types";
+import { PhilippinePeso, ReceiptText } from "lucide-react";
 
-const navItems: NavItem[] = [
+// Define all possible navigation items with role permissions
+const allNavItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Dashboard",
     path: "/",
+    roles: ["admin", "schoolHead", "teacher"], // All roles can access
   },
   {
     icon: <UserCircleIcon />,
     name: "Manage Users",
     path: "/users",
+    roles: ["admin"], // Only admin
+  },
+
+  {
+    icon: <PhilippinePeso />,
+    name: "Fund Request",
+    roles: ["schoolHead"], // Admin and school heads
+    subItems: [
+      {
+        name: "Create Fund Request",
+        path: "/fund-request/create-fund-request",
+        pro: false,
+        roles: ["schoolHead"], // Only admin can see this sub-item
+      },
+      {
+        name: "Request List",
+        path: "/fund-request/request-list",
+        pro: false,
+        roles: ["schoolHead"],
+      },
+    ],
+  },
+  {
+    icon: <ReceiptText />,
+    name: "Liquidation",
+    path: "/liquidation",
+    roles: ["schoolHead"], // Only admin
   },
   {
     icon: <ReceiptIcon />,
     name: "Manage Transaction",
     path: "/transactions",
+    roles: ["schoolHead"], // Admin and school heads
   },
   {
     icon: <StatusIcon />,
     name: "Manage Status",
     path: "/status",
+    roles: ["admin"], // Only admin
   },
   {
     icon: <ReportIcon />,
     name: "Generate Report",
+    roles: ["admin", "schoolHead"], // Admin and school heads
     subItems: [
-      { name: "Sales", path: "/generate-report/sales", pro: false },
+      {
+        name: "Sales",
+        path: "/generate-report/sales",
+        pro: false,
+        roles: ["admin"], // Only admin can see this sub-item
+      },
       {
         name: "Customer Frequency",
         path: "/generate-report/customer-frequency",
         pro: false,
+        roles: ["admin", "schoolHead"],
+      },
+      {
+        name: "Student Performance",
+        path: "/generate-report/student-performance",
+        pro: false,
+        roles: ["schoolHead", "teacher"],
       },
     ],
   },
-  // {
-  //   icon: <CalenderIcon />,
-  //   name: "Calendar",
-  //   path: "/calendar",
-  // },
   {
     icon: <UserCircleIcon />,
     name: "User Profile",
     path: "/profile",
+    roles: ["admin", "schoolHead", "teacher"], // All roles
   },
-  // {
-  //   name: "Forms",
-  //   icon: <ListIcon />,
-  //   subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }],
-  // },
-  // {
-  //   name: "Tables",
-  //   icon: <TableIcon />,
-  //   subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
-  // },
-  // {
-  //   name: "Pages",
-  //   icon: <PageIcon />,
-  //   subItems: [
-  //     { name: "Blank Page", path: "/blank", pro: false },
-  //     { name: "404 Error", path: "/error-404", pro: false },
-  //   ],
-  // },
+  {
+    icon: <UserCircleIcon />,
+    name: "My Classes",
+    path: "/classes",
+    roles: ["teacher"], // Only teachers
+  },
 ];
 
 const othersItems: NavItem[] = [
   {
     icon: <PieChartIcon />,
     name: "Charts",
+    roles: ["admin", "schoolHead"],
     subItems: [
-      { name: "Line Chart", path: "/line-chart", pro: false },
-      { name: "Bar Chart", path: "/bar-chart", pro: false },
+      {
+        name: "Line Chart",
+        path: "/line-chart",
+        pro: false,
+        roles: ["admin", "schoolHead"],
+      },
+      { name: "Bar Chart", path: "/bar-chart", pro: false, roles: ["admin"] },
     ],
   },
   {
     icon: <BoxCubeIcon />,
     name: "UI Elements",
+    roles: ["admin"],
     subItems: [
-      { name: "Alerts", path: "/alerts", pro: false },
-      { name: "Avatar", path: "/avatars", pro: false },
-      { name: "Badge", path: "/badge", pro: false },
-      { name: "Buttons", path: "/buttons", pro: false },
-      { name: "Images", path: "/images", pro: false },
-      { name: "Videos", path: "/videos", pro: false },
-    ],
-  },
-  {
-    icon: <PlugInIcon />,
-    name: "Authentication",
-    subItems: [
-      { name: "Sign In", path: "/signin", pro: false },
-      { name: "Sign Up", path: "/signup", pro: false },
+      { name: "Alerts", path: "/alerts", pro: false, roles: ["admin"] },
+      { name: "Avatar", path: "/avatars", pro: false, roles: ["admin"] },
     ],
   },
 ];
@@ -125,7 +149,47 @@ const AppSidebar: React.FC = () => {
   );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // const isActive = (path: string) => location.pathname === path;
+  // Get user role (hardcoded for now, but you can get from localStorage later)
+  const [userRole, setUserRole] = useState<string>("schoolHead"); // Default to admin
+
+  // Filter nav items based on user role
+  const filterItemsByRole = (items: NavItem[]): NavItem[] => {
+    return items
+      .filter((item) => {
+        // If no roles specified, show to everyone
+        if (!item.roles) return true;
+        // Check if user has permission
+        return item.roles.includes(userRole);
+      })
+      .map((item) => {
+        // Filter subItems if they exist
+        if (item.subItems) {
+          return {
+            ...item,
+            subItems: item.subItems.filter((subItem) => {
+              if (!subItem.roles) return true;
+              return subItem.roles.includes(userRole);
+            }),
+          };
+        }
+        return item;
+      })
+      .filter((item) => {
+        // Remove items with empty subItems (if the item requires subItems)
+        if (item.subItems && item.subItems.length === 0) return false;
+        return true;
+      });
+  };
+
+  const [navItems, setNavItems] = useState<NavItem[]>([]);
+  const [filteredOthersItems, setFilteredOthersItems] = useState<NavItem[]>([]);
+
+  useEffect(() => {
+    // Filter items whenever userRole changes
+    setNavItems(filterItemsByRole(allNavItems));
+    setFilteredOthersItems(filterItemsByRole(othersItems));
+  }, [userRole]);
+
   const isActive = useCallback(
     (path: string) => location.pathname === path,
     [location.pathname]
@@ -134,7 +198,7 @@ const AppSidebar: React.FC = () => {
   useEffect(() => {
     let submenuMatched = false;
     ["main", "others"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : othersItems;
+      const items = menuType === "main" ? navItems : filteredOthersItems;
       items.forEach((nav, index) => {
         if (nav.subItems) {
           nav.subItems.forEach((subItem) => {
@@ -153,30 +217,31 @@ const AppSidebar: React.FC = () => {
     if (!submenuMatched) {
       setOpenSubmenu(null);
     }
-  }, [location, isActive]);
-
+  }, [location, isActive, navItems, filteredOthersItems]);
   useEffect(() => {
+    // This calculates the height when submenu opens
     if (openSubmenu !== null) {
       const key = `${openSubmenu.type}-${openSubmenu.index}`;
-      if (subMenuRefs.current[key]) {
-        setSubMenuHeight((prevHeights) => ({
-          ...prevHeights,
-          [key]: subMenuRefs.current[key]?.scrollHeight || 0,
+      const subMenuElement = subMenuRefs.current[key];
+
+      if (subMenuElement) {
+        // Calculate the height including any padding/margins
+        const height = subMenuElement.scrollHeight + 8;
+        setSubMenuHeight((prev) => ({
+          ...prev,
+          [key]: height,
         }));
       }
     }
-  }, [openSubmenu]);
+  }, [openSubmenu, navItems, filteredOthersItems]);
 
+  // And make sure your handleSubmenuToggle is like this:
   const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
-    setOpenSubmenu((prevOpenSubmenu) => {
-      if (
-        prevOpenSubmenu &&
-        prevOpenSubmenu.type === menuType &&
-        prevOpenSubmenu.index === index
-      ) {
-        return null;
+    setOpenSubmenu((prev) => {
+      if (prev?.type === menuType && prev?.index === index) {
+        return null; // Close if same submenu clicked
       }
-      return { type: menuType, index };
+      return { type: menuType, index }; // Open new submenu
     });
   };
 
@@ -365,27 +430,28 @@ const AppSidebar: React.FC = () => {
               </h2>
               {renderMenuItems(navItems, "main")}
             </div>
-            {/* delete this if you want to remove the others menu */}
 
-            {/* <div className="">
-              <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
-                  !isExpanded && !isHovered
-                    ? "lg:justify-center"
-                    : "justify-start"
-                }`}
-              >
-                {isExpanded || isHovered || isMobileOpen ? (
-                  "Others"
-                ) : (
-                  <HorizontaLDots />
-                )}
-              </h2>
-              {renderMenuItems(othersItems, "others")}
-            </div> */}
+            {/* Others menu section */}
+            {filteredOthersItems.length > 0 && (
+              <div className="">
+                <h2
+                  className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
+                    !isExpanded && !isHovered
+                      ? "lg:justify-center"
+                      : "justify-start"
+                  }`}
+                >
+                  {isExpanded || isHovered || isMobileOpen ? (
+                    "Others"
+                  ) : (
+                    <HorizontaLDots />
+                  )}
+                </h2>
+                {renderMenuItems(filteredOthersItems, "others")}
+              </div>
+            )}
           </div>
         </nav>
-        {/* {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null} */}
       </div>
     </aside>
   );
