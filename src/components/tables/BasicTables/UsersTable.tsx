@@ -30,6 +30,8 @@ import {
   X,
   Search,
   Loader2,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
 import { EyeCloseIcon, CalenderIcon } from "@/icons";
 import { User } from "@/lib/types";
@@ -38,7 +40,6 @@ import axios from "axios";
 import Badge from "@/components/ui/badge/Badge";
 import { useAuth } from "@/context/AuthContext";
 import { calculateAge } from "@/lib/helpers";
-// Import useAuth hook
 
 type SortDirection = "asc" | "desc" | null;
 type SortableField = keyof Pick<
@@ -50,6 +51,7 @@ type SortableField = keyof Pick<
   | "email"
   | "phone_number"
   | "password"
+  | "is_active"
 >;
 
 interface UsersTableProps {
@@ -67,7 +69,6 @@ interface FormErrors {
   phone_number?: string;
 }
 
-// Validation functions
 const validateEmail = (email: string) => {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return re.test(email);
@@ -84,12 +85,9 @@ const validatePhoneNumber = (phone: string) => {
 };
 
 export default function UsersTable({ users, setUsers }: UsersTableProps) {
-  const { user: currentUser } = useAuth(); // Get current logged-in user
-  // Data state
+  const { user: currentUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-
-  // Table features state
   const [sortConfig, setSortConfig] = useState<{
     key: SortableField;
     direction: SortDirection;
@@ -97,15 +95,19 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
 
   // Form state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [userToView, setUserToView] = useState<User | null>(null);
+  const [userToArchive, setUserToArchive] = useState<User | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
@@ -113,13 +115,10 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
 
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // Required fields for editing
   const requiredFields = ["first_name", "last_name", "username", "email"];
 
-  // Check if form is valid
   const isFormValid = useMemo(() => {
     if (!selectedUser) return false;
-
     return (
       requiredFields.every(
         (field) => selectedUser[field as keyof User]?.toString().trim() !== ""
@@ -127,48 +126,45 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
     );
   }, [selectedUser, formErrors]);
 
-  // Fetch users
+  // Fetch users with archive filter
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get("http://127.0.0.1:8000/api/users/", {
+        params: {
+          archived: showArchived,
+        },
+      });
+      setUsers(response.data);
+      setFilteredUsers(response.data); // Initialize filtered users
+    } catch (err) {
+      setError(err as Error);
+      toast.error("Failed to fetch users");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchUsers = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get("http://127.0.0.1:8000/api/users/");
-        setUsers(response.data);
-        console.log(response.data);
-      } catch (err) {
-        setError(err as Error);
-        toast.error("Failed to fetch users");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
-  }, []);
+  }, [showArchived]);
 
-  // Handle form field changes with validation
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     if (!selectedUser) return;
-
     const { name, value } = e.target;
-
-    // Update user data immediately
     setSelectedUser((prev) => ({
       ...prev!,
       [name]: value,
     }));
 
-    // Clear previous timeout
     if (debounceTimeout.current) {
       clearTimeout(debounceTimeout.current);
     }
 
-    // Set new timeout for validation
     debounceTimeout.current = setTimeout(() => {
       const newErrors = { ...formErrors };
-
       switch (name) {
         case "email":
           if (!validateEmail(value)) {
@@ -192,19 +188,16 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
           }
           break;
         default:
-          // For required fields
           if (requiredFields.includes(name) && !value.trim()) {
             newErrors[name as keyof FormErrors] = "This field is required";
           } else {
             delete newErrors[name as keyof FormErrors];
           }
       }
-
       setFormErrors(newErrors);
     }, 500);
   };
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (debounceTimeout.current) {
@@ -213,51 +206,54 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
     };
   }, []);
 
-  // Handle phone number input
   const handlePhoneNumberInput = (e: React.FormEvent<HTMLInputElement>) => {
     const input = e.target as HTMLInputElement;
     input.value = input.value.replace(/[^0-9+]/g, "");
   };
 
-  // Filter and sort users - EXCLUDE CURRENT USER
-  const filteredAndSortedUsers = useMemo(() => {
-    let filtered = users.filter((user) => user.id !== currentUser?.user_id); // Exclude current user
-
-    // Apply search filter
+  // Filter users based on search term
+  // In the useEffect that filters users based on search term
+  useEffect(() => {
     if (searchTerm) {
-      filtered = filtered.filter(
-        (user) =>
-          user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (user.phone_number && user.phone_number.includes(searchTerm))
+      const filtered = users
+        .filter((user) => user.id !== currentUser?.user_id) // Exclude current user
+        .filter(
+          (user) =>
+            user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (user.phone_number && user.phone_number.includes(searchTerm))
+        );
+      setFilteredUsers(filtered);
+    } else {
+      // Exclude current user even when there's no search term
+      setFilteredUsers(
+        users.filter((user) => user.id !== currentUser?.user_id)
       );
     }
+  }, [searchTerm, users, currentUser?.user_id]); // Add currentUser.user_id to dependencies
 
-    // Apply sorting
+  // Sort users
+  const sortedUsers = useMemo(() => {
     if (sortConfig !== null) {
-      filtered.sort((a, b) => {
+      return [...filteredUsers].sort((a, b) => {
         const aValue = a[sortConfig.key];
         const bValue = b[sortConfig.key];
-
         if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
         if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
         return 0;
       });
     }
+    return filteredUsers;
+  }, [filteredUsers, sortConfig]);
 
-    return filtered;
-  }, [users, searchTerm, sortConfig, currentUser?.user_id]);
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredAndSortedUsers.length / itemsPerPage);
+  const totalPages = Math.ceil(sortedUsers.length / itemsPerPage);
   const currentItems = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredAndSortedUsers.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredAndSortedUsers, currentPage, itemsPerPage]);
+    return sortedUsers.slice(startIndex, startIndex + itemsPerPage);
+  }, [sortedUsers, currentPage, itemsPerPage]);
 
-  // Sort handler
   const requestSort = (key: SortableField) => {
     let direction: SortDirection = "asc";
     if (sortConfig && sortConfig.key === key) {
@@ -266,33 +262,33 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
     setSortConfig(direction ? { key, direction } : null);
   };
 
-  // Handle page changes
   const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
   };
 
-  // Handle edit user
   const handleEditUser = (user: User) => {
     setSelectedUser({ ...user, password: "", confirm_password: "" });
     setFormErrors({});
     setIsDialogOpen(true);
   };
 
-  // Handle delete user
   const handleDeleteClick = (user: User) => {
     setUserToDelete(user);
     setIsDeleteDialogOpen(true);
   };
 
-  // Handle view user
   const handleViewUser = (user: User) => {
     setUserToView(user);
     setIsViewDialogOpen(true);
   };
 
-  // Handle form submission
+  const handleArchiveClick = (user: User) => {
+    setUserToArchive(user);
+    setIsArchiveDialogOpen(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedUser) return;
@@ -313,20 +309,16 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
       return;
     }
 
-    // Open confirmation dialog before submitting
     setIsConfirmDialogOpen(true);
   };
 
-  // Handle confirmed edit
   const handleConfirmedEdit = async () => {
     if (!selectedUser) return;
-
     setIsSubmitting(true);
 
     try {
       const payload = {
         ...selectedUser,
-        // Don't send password if it's empty
         password: selectedUser.password || undefined,
       };
 
@@ -348,16 +340,11 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
         transition: Bounce,
       });
 
-      // Refresh the user list
-      const usersResponse = await axios.get("http://127.0.0.1:8000/api/users/");
-      setUsers(usersResponse.data);
-
-      // Close all dialogs
+      await fetchUsers();
       setIsDialogOpen(false);
       setIsConfirmDialogOpen(false);
     } catch (error) {
       let errorMessage = "Failed to update user. Please try again.";
-
       if (axios.isAxiosError(error) && error.response) {
         if (error.response.data.username) {
           errorMessage = "Username already exists.";
@@ -367,7 +354,6 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
           errorMessage = "Password doesn't meet requirements.";
         }
       }
-
       toast.error(errorMessage, {
         position: "top-center",
         autoClose: 2000,
@@ -385,10 +371,8 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
     }
   };
 
-  // Handle delete confirmation
   const handleDeleteConfirm = async () => {
     if (!userToDelete) return;
-
     setIsSubmitting(true);
 
     try {
@@ -406,9 +390,7 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
         transition: Bounce,
       });
 
-      // Refresh the user list
-      const usersResponse = await axios.get("http://127.0.0.1:8000/api/users/");
-      setUsers(usersResponse.data);
+      await fetchUsers();
     } catch (error) {
       toast.error("Failed to delete user", {
         position: "top-center",
@@ -429,7 +411,59 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
     }
   };
 
-  // Loading and error states
+  const handleArchiveConfirm = async () => {
+    if (!userToArchive) return;
+    setIsSubmitting(true);
+
+    try {
+      const newStatus = !userToArchive.is_active;
+      await axios.patch(
+        `http://127.0.0.1:8000/api/users/${userToArchive.id}/`,
+        {
+          is_active: newStatus,
+        }
+      );
+
+      toast.success(
+        `User ${newStatus ? "restored" : "archived"} successfully!`,
+        {
+          position: "top-center",
+          autoClose: 2000,
+          style: { fontFamily: "Outfit, sans-serif" },
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          transition: Bounce,
+        }
+      );
+
+      await fetchUsers();
+    } catch (error) {
+      toast.error(
+        `Failed to ${userToArchive.is_active ? "archive" : "restore"} user`,
+        {
+          position: "top-center",
+          autoClose: 2000,
+          style: { fontFamily: "Outfit, sans-serif" },
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          transition: Bounce,
+        }
+      );
+    } finally {
+      setIsSubmitting(false);
+      setIsArchiveDialogOpen(false);
+      setUserToArchive(null);
+    }
+  };
+
   if (loading) return <Loading />;
   if (error) {
     return <div className="p-4 text-red-500">Error: {error.message}</div>;
@@ -453,6 +487,20 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
         </div>
 
         <div className="flex gap-4 w-full md:w-auto">
+          <Button
+            variant={showArchived ? "primary" : "outline"}
+            onClick={() => setShowArchived(!showArchived)}
+            startIcon={
+              showArchived ? (
+                <ArchiveRestore className="size-4" />
+              ) : (
+                <Archive className="size-4" />
+              )
+            }
+          >
+            {showArchived ? "View Active" : "View Archived"}
+          </Button>
+
           <select
             value={itemsPerPage.toString()}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
@@ -609,6 +657,12 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
+                  Status
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                >
                   Actions
                 </TableCell>
               </TableRow>
@@ -648,6 +702,11 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
                     <TableCell className="px-5 py-4 text-gray-800 text-start text-theme-sm dark:text-gray-400">
                       {user.phone_number}
                     </TableCell>
+                    <TableCell className="px-5 py-4 text-gray-800 text-start text-theme-sm dark:text-gray-400">
+                      <Badge color={user.is_active ? "success" : "error"}>
+                        {user.is_active ? "Active" : "Archived"}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="px-5 py-4 text-gray-800 text-start text-theme-sm dark:text-gray-400 space-x-2">
                       <button
                         onClick={(e) => {
@@ -661,12 +720,21 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          handleArchiveClick(user);
+                        }}
+                        className="px-4 py-2 bg-error-500 text-white dark:text-white rounded-md hover:bg-error-600 transition-colors"
+                      >
+                        {user.is_active ? "Archive" : "Restore"}
+                      </button>
+                      {/* <button
+                        onClick={(e) => {
+                          e.stopPropagation();
                           handleDeleteClick(user);
                         }}
                         className="px-4 py-2 bg-error-500 text-white dark:text-white rounded-md hover:bg-error-600 transition-colors"
                       >
                         Delete
-                      </button>
+                      </button> */}
                     </TableCell>
                   </TableRow>
                 ))
@@ -674,9 +742,10 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
                 <TableRow>
                   <TableCell
                     className="py-8 text-center text-gray-500"
-                    colSpan={6}
+                    colSpan={8}
                   >
-                    No users found matching your criteria
+                    No {showArchived ? "archived" : "active"} users found
+                    matching your criteria
                   </TableCell>
                 </TableRow>
               )}
@@ -690,9 +759,8 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
         <div className="text-sm text-gray-600 dark:text-gray-400">
           Showing{" "}
           {currentItems.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}{" "}
-          to{" "}
-          {Math.min(currentPage * itemsPerPage, filteredAndSortedUsers.length)}{" "}
-          of {filteredAndSortedUsers.length} entries
+          to {Math.min(currentPage * itemsPerPage, sortedUsers.length)} of{" "}
+          {sortedUsers.length} entries
         </div>
 
         <div className="flex items-center gap-2">
@@ -1097,6 +1165,66 @@ export default function UsersTable({ users, setUsers }: UsersTableProps) {
                     </span>
                   ) : (
                     "Delete"
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Archive Confirmation Dialog */}
+      <Dialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
+        <DialogContent className="w-full rounded-lg bg-white dark:bg-gray-800 p-8 shadow-xl">
+          <DialogHeader className="mb-8">
+            <DialogTitle className="text-3xl font-bold text-gray-800 dark:text-white">
+              {userToArchive?.is_active ? "Archive User" : "Restore User"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {userToArchive && (
+            <div className="space-y-4">
+              <p className="text-gray-600 dark:text-gray-400">
+                Are you sure you want to{" "}
+                {userToArchive.is_active ? "archive" : "restore"} user{" "}
+                <strong>
+                  {userToArchive.first_name} {userToArchive.last_name}
+                </strong>
+                ?{" "}
+                {userToArchive.is_active
+                  ? "Archived users will not be able to log in."
+                  : "Restored users will regain access to the system."}
+              </p>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsArchiveDialogOpen(false);
+                    setUserToArchive(null);
+                  }}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  color={userToArchive.is_active ? "warning" : "success"}
+                  onClick={handleArchiveConfirm}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="animate-spin size-4" />
+                      {userToArchive.is_active
+                        ? "Archiving..."
+                        : "Restoring..."}
+                    </span>
+                  ) : userToArchive.is_active ? (
+                    "Archive"
+                  ) : (
+                    "Restore"
                   )}
                 </Button>
               </div>

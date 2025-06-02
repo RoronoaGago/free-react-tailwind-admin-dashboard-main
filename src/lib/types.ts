@@ -6,6 +6,7 @@ export type User = {
     email: string;
     date_of_birth?: string;
     phone_number: string;
+    is_active: boolean;
     password: string;
     confirm_password?: string;
 

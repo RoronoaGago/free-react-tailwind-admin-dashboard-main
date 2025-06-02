@@ -46,3 +46,4 @@ export const formatDateTime = (dateString: string): string => {
   };
   return new Date(dateString).toLocaleDateString(undefined, options);
 };
+
